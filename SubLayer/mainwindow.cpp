@@ -6,11 +6,13 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    editorscene =(Editor*) (new QGraphicsScene(this));
-    ui->graphicsView->setScene(editorscene);
+    //editor = new editor();
+    QImage image("/home/zanooker/Pictures/canPrint.png");
+    editor = new Editor(ui->graphicsView);
+    editor->setImage(image);
 
-    layerscene = (LayerEditor*)new QGraphicsScene(this);
-    ui->graphicsView_2->setScene(layerscene);
+    layerView = (LayerEditor*)new QGraphicsScene(this);
+    ui->graphicsView_2->setScene(layerView);
 
     ui->lineEdit->setEnabled(false);
 }
@@ -29,6 +31,7 @@ void MainWindow::on_pushButton_clicked()
     ui->lineEdit->setText(filename);
 
     QImage image(filename);
+    editor->setImage(image);
     QRect qr = ui->graphicsView->geometry();
     QSize A(qr.width(),qr.height());
     image = image.scaled(A,Qt::KeepAspectRatio);
@@ -36,7 +39,7 @@ void MainWindow::on_pushButton_clicked()
     pps.push_back(pp);
 
     //editorscene->addItem(new QGraphicsPixmapItem(QPixmap::fromImage(image2)));
-    editorscene->addItem(new QGraphicsPixmapItem(QPixmap::fromImage(pps.back().gi)));
+    //editor->setImage(image);
     reloadScene();
 
     QMessageBox::information(this,tr("Loading File"),"load "+filename+" successfully");
@@ -44,7 +47,7 @@ void MainWindow::on_pushButton_clicked()
 
 void MainWindow::reloadScene()
 {
-    layerscene->addItemFromLayer(pps,ui->spinBox->value());
+    layerView->addItemFromLayer(pps,ui->spinBox->value());
 }
 
 void MainWindow::on_spinBox_valueChanged(int arg1)

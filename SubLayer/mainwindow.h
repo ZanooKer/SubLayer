@@ -40,8 +40,8 @@ private slots:
 
 private:
     Ui::MainWindow *ui;
-    Editor *editorscene;
-    LayerEditor *layerscene;
+    Editor *editor;
+    LayerEditor *layerView;
     std::list<PicturePiece> pps;
 };
 
