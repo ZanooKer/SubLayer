@@ -53,6 +53,12 @@ void GLWidget::setCurrentPP(std::vector<PicturePiece> pps)
     this->pps = pps;
 }
 
+void GLWidget::setMaxSizePic(int width,int  height)
+{
+    this->maxWidth = width;
+    this->maxHeight = height;
+}
+
 void GLWidget::initializeGL()
 {
     initializeOpenGLFunctions();
@@ -159,14 +165,17 @@ void GLWidget::makeObject(std::vector<PicturePiece> pps)
     if(sizeof pps == 0)return;
 
     numberOfPic = (int)pps.size();
-    float coords[numberOfPic][4][3];
+    GLfloat coords[numberOfPic][4][3];
+
     for (int j = 0; j < numberOfPic; ++j)
     {
+        float boundW = float(pps[j].gi.width()/ (float)maxWidth);
+        float boundH = float(pps[j].gi.height()/ (float)maxHeight);
         for(int s = 0; s<4; s++)
         {
-            coords[j][s][0] = (s==0 || s==3)?1:-1;
+            coords[j][s][0] = (s==0 || s==3)?boundW:-1*boundW;
             coords[j][s][1] = pps[j].layer;
-            coords[j][s][2] = (s<2)?1:-1;
+            coords[j][s][2] = (s<2)?boundH:-1*boundH;
         }
     }
     for (int j = 0; j < numberOfPic; ++j)

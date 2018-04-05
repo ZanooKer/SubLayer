@@ -24,6 +24,7 @@ public:
     void rotateBy(int xAngle, int yAngle, int zAngle);
     void setClearColor(const QColor &color);
     void setCurrentPP(std::vector<PicturePiece> pps);
+    void setMaxSizePic(int width,int  height);
 
 signals:
     void clicked();
@@ -46,6 +47,7 @@ private:
     int yRot;
     int zRot;
     int numberOfPic;
+    int maxWidth,maxHeight;
     QOpenGLTexture *textures[6];
     QOpenGLShaderProgram *program;
     QOpenGLBuffer vbo;

@@ -112,10 +112,36 @@ int main(int argc, char *argv[])
 
     QString cmd = " ";
     int numberOfLayers = 0;
-    if(argc != 6)
+    if(QString(argv[1]) == QString("--help"))
     {
-        printf("%d\n",argc);
-        printf("You don't write in format as description. Please --help to see all configs.");
+        printf("Format: ./API [mode of API] [millimeter in width] [millimeter in height] [mode of resolution] [text-file path]\n");
+        printf("        [mode of API] consists of \'visualize\' and \'exportO3DP\' not done yet \n");
+        printf("        [millimeter in width] is integer value\n");
+        printf("        [millimeter in height] is integer value\n");
+        printf("        [mode of resolution] is integer value equals to pixels per millimeter or \'--auto-scale\' if you want to auto scale pixels per millimeter based on picture in layer 0\n");
+        printf("        [text-file path] is the path to text file which is described below. \n\n");
+
+        printf("text file describes number of layers, millimeter between each layers, layer number and image paths related to layer number\n");
+        printf("Example of txt files is \n");
+        printf("----------------------------------------------------\n");
+        printf("|#layers,d0,d1,d2,...\t| \n"
+               "|l0,image0.png\t\t|\n"
+               "|l1,image1.png\t\t|\n"
+               "|.\t\t\t|\n"
+               "|.\t\t\t|\n"
+               "|.\t\t\t|\n");
+        printf("----------------------------------------------------\n");
+        printf("Suggestions:\n1. d0 is the number of millimeter between l0 and l0 plus one. NOT! l0 and l1\n");
+        printf("2. l0,l1 and so on are not necessary to be consecutive.But dn are related to ln. \n");
+
+
+
+    }
+
+
+    else if(argc != 6)
+    {
+        printf("You don't write in format as description. Please --help to see all configs.\n");
     }
     else
     {

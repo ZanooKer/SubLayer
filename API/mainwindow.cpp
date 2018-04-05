@@ -43,6 +43,7 @@ void MainWindow::visualize()
     glWidgets = new GLWidget();
     glWidgets ->setClearColor(clearColor);
     glWidgets ->rotateBy(+42 * 16, +42 * 16, 0);
+    glWidgets->setMaxSizePic(maxWidth,maxHeight);
     glWidgets->setCurrentPP(pps);
     ui->layout->addWidget(glWidgets);
 
@@ -65,19 +66,7 @@ void MainWindow::addImage(QString filename,int layer)
 
 QImage MainWindow::resizeResolution(QImage in)
 {
-    if(in.width() <= maxWidth && in.height()<= maxHeight)
-    {
-        printf("Not necessary to decrease resolution\n");
-        return in;
-    }
-    else
-    {
-        int ratio = (int)std::max(in.width()/(float)maxWidth , in.height()/(float)maxHeight);
-        int afWidth = (int) (ratio*maxWidth);
-        int afHeight = (int) (ratio*maxHeight);
-
-        printf("Decrease resolution from %d , %d to %d , %d \n", in.width(),in.height(),afWidth,afHeight);
-        QImage ans = in.scaled(QSize(afWidth,afHeight),Qt::KeepAspectRatio);
-        return ans;
-    }
+    QImage ans = in.scaled(QSize(maxWidth,maxHeight),Qt::KeepAspectRatio);
+    printf("Decrease resolution from %d , %d to %d , %d \n", in.width(),in.height(),ans.width(),ans.height());
+    return ans;
 }
