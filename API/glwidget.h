@@ -25,6 +25,7 @@ public:
     void setClearColor(const QColor &color);
     void setCurrentPP(std::vector<PicturePiece> pps);
     void setMaxSizePic(int width,int  height);
+    void setDiffHeight(std::map<int,float> layerDiff);
 
 signals:
     void clicked();
@@ -48,6 +49,7 @@ private:
     int zRot;
     int numberOfPic;
     int maxWidth,maxHeight;
+    std::map<int,float> ld;
     QOpenGLTexture *textures[6];
     QOpenGLShaderProgram *program;
     QOpenGLBuffer vbo;

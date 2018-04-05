@@ -27,7 +27,7 @@ public:
     float real2Scale;
     int maxWidth;
     int maxHeight;
-    std::map<int,int> nextDiff;
+    void setLayerDiff(std::map<int,int> diff);
 
 private slots:
     void rotateOneStep();
@@ -37,6 +37,7 @@ private:
     int numberOfLayer;
     int startNumLayer;
     bool resize;
+    std::map<int,float> layerDiff;
     std::vector<PicturePiece> pps;
     GLWidget *glWidgets;
 };

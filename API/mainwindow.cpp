@@ -29,6 +29,17 @@ void MainWindow::rotateOneStep()
     glWidgets->rotateBy(0, +2 * 16, 0);
 }
 
+void MainWindow::setLayerDiff(std::map<int,int> diff)
+{
+    std::map<int,float> temp;
+    temp[0] = 0;
+    float grid = std::max(maxHeight,maxWidth);
+    for(std::pair<int,int> d:diff)
+    {
+        temp[d.first+1] = temp[d.first] + diff[d.first]*real2Scale/grid;
+    }
+    this->layerDiff = temp;
+}
 /*void MainWindow::enableResize(int w,int h)
 {
     reWidth = w;
@@ -44,6 +55,7 @@ void MainWindow::visualize()
     glWidgets ->setClearColor(clearColor);
     glWidgets ->rotateBy(+42 * 16, +42 * 16, 0);
     glWidgets->setMaxSizePic(maxWidth,maxHeight);
+    glWidgets->setDiffHeight(layerDiff);
     glWidgets->setCurrentPP(pps);
     ui->layout->addWidget(glWidgets);
 

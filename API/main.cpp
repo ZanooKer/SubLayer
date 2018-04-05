@@ -52,7 +52,40 @@ std::vector<int> findRatioAndProp(QString filename,int width,int height)
     }
 }
 
-void addAllImages(MainWindow &w,QString textfile)
+bool checkInvalidLayer(std::map<int,int> diff,std::list<int> layers)
+{
+    printf("\nchecking for invalid layers... \n");
+    bool ans = false;
+    for(std::pair<int,int> e:diff)
+    {
+        printf("check for layer %d and %d...",e.first,e.first+1);
+        bool firstInVect = false;
+        bool lastInVect = false;
+        for(int i:layers)
+        {
+            if(firstInVect && lastInVect)
+                break;
+            if(i == e.first && !firstInVect)
+            {
+                firstInVect = true;
+            }
+            if(i == e.first+1 && !lastInVect)
+            {
+                lastInVect = true;
+            }
+        }
+        if(!(firstInVect && lastInVect))
+        {
+            ans = true;
+            printf("not found\n");
+            break;
+        }
+        printf("found\n");
+    }
+    return !ans;
+}
+
+bool addAllImages(MainWindow &w,QString textfile)
 {
     printf("Loading image to windows\n");
     QFile file(textfile);
@@ -65,6 +98,7 @@ void addAllImages(MainWindow &w,QString textfile)
     int line = 0;
     std::vector<int> nextDiff;
     std::map<int,int> layerDiff;
+    std::list<int> allLayers;
     int numLayer;
     while(!in.atEnd()) {
         QString lineText = in.readLine();
@@ -82,19 +116,20 @@ void addAllImages(MainWindow &w,QString textfile)
         else {
             QString l = fields.at(0);
             QString temp = fields.at(1);
+            w.addImage(temp,l.toInt());
+            allLayers.push_back(l.toInt());
             if(line < nextDiff.size()+1)
             {
                 int n = l.toInt();
                 layerDiff[n] = nextDiff[line-1];
                 printf("Layer %d to %d have %d millimeter\n",n,n+1,layerDiff[n]);
             }
-            w.addImage(temp,l.toInt());
         }
         line++;
     }
     file.close();
-
-    w.nextDiff = layerDiff;
+    w.setLayerDiff(layerDiff);
+    return checkInvalidLayer(layerDiff,allLayers);
 }
 
 int main(int argc, char *argv[])
@@ -111,7 +146,6 @@ int main(int argc, char *argv[])
     //   0     1       2 3    4           5
 
     QString cmd = " ";
-    int numberOfLayers = 0;
     if(QString(argv[1]) == QString("--help"))
     {
         printf("Format: ./API [mode of API] [millimeter in width] [millimeter in height] [mode of resolution] [text-file path]\n");
@@ -133,11 +167,7 @@ int main(int argc, char *argv[])
         printf("----------------------------------------------------\n");
         printf("Suggestions:\n1. d0 is the number of millimeter between l0 and l0 plus one. NOT! l0 and l1\n");
         printf("2. l0,l1 and so on are not necessary to be consecutive.But dn are related to ln. \n");
-
-
-
     }
-
 
     else if(argc != 6)
     {
@@ -161,11 +191,9 @@ int main(int argc, char *argv[])
             }
             else
             {
-                QString basedPath = findBasedPath(filename);
-                QImage im(basedPath);
                 pixPerReal = atoi(argv[4]);
-                maxWidth = std::min(pixPerReal * realWidth,im.width());
-                maxHeight = std::min(pixPerReal * realHeight,im.height());
+                maxWidth = pixPerReal*realWidth;
+                maxHeight = pixPerReal*realHeight;
                 printf("Set each layer have maximum width : %d \n",maxWidth);
                 printf("Set each layer have maximum height : %d \n",maxHeight);
             }
@@ -174,10 +202,14 @@ int main(int argc, char *argv[])
             w.maxHeight = maxHeight;
             printf("Set %d pixels per one millimeter.\n", pixPerReal);
 
-            addAllImages(w,filename);
-            w.visualize();
-            w.show();
-            return a.exec();
+            printf("\n");
+            if(addAllImages(w,filename)){
+                printf("\n");
+                printf("visualize...\n");
+                w.visualize();
+                w.show();
+                return a.exec();
+            }
         }
 
     }

@@ -59,6 +59,11 @@ void GLWidget::setMaxSizePic(int width,int  height)
     this->maxHeight = height;
 }
 
+void GLWidget::setDiffHeight(std::map<int,float> layerDiff)
+{
+    this->ld = layerDiff;
+}
+
 void GLWidget::initializeGL()
 {
     initializeOpenGLFunctions();
@@ -169,12 +174,14 @@ void GLWidget::makeObject(std::vector<PicturePiece> pps)
 
     for (int j = 0; j < numberOfPic; ++j)
     {
-        float boundW = float(pps[j].gi.width()/ (float)maxWidth);
-        float boundH = float(pps[j].gi.height()/ (float)maxHeight);
+        float grid = std::max(maxHeight,maxWidth);
+        float boundW = float(pps[j].gi.width()/ grid);
+        float boundH = float(pps[j].gi.height()/ grid);
+
         for(int s = 0; s<4; s++)
         {
             coords[j][s][0] = (s==0 || s==3)?boundW:-1*boundW;
-            coords[j][s][1] = pps[j].layer;
+            coords[j][s][1] = ld[pps[j].layer];
             coords[j][s][2] = (s<2)?boundH:-1*boundH;
         }
     }
