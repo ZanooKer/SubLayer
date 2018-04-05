@@ -5,6 +5,7 @@
 #include <QtWidgets>
 #include "picturepiece.h"
 #include "glwidget.h"
+#include <string>
 
 namespace Ui {
 class MainWindow;
@@ -21,8 +22,12 @@ public:
     void setNumLayers(int num);
     void setStartLayers(int num);
     void addImage(QString filename,int layer);
-    void enableResize(int width,int height);
+//    void enableResize(int width,int height);
+    QImage resizeResolution(QImage in);
     float real2Scale;
+    int maxWidth;
+    int maxHeight;
+    std::map<int,int> nextDiff;
 
 private slots:
     void rotateOneStep();
@@ -32,8 +37,6 @@ private:
     int numberOfLayer;
     int startNumLayer;
     bool resize;
-    int reWidth;
-    int reHeight;
     std::vector<PicturePiece> pps;
     GLWidget *glWidgets;
 };

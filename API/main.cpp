@@ -1,12 +1,11 @@
 #include "mainwindow.h"
 #include <QApplication>
-#include <string>
 #include <iostream>
 
-int findRatio(QString filename,int width,int height)
+QString findBasedPath(QString textfile)
 {
     printf("find ratio from based layer (layer 0)\n");
-    QFile file(filename);
+    QFile file(textfile);
     if(!file.open(QIODevice::ReadOnly)) {
         QMessageBox::information(0, "error", file.errorString());
     }
@@ -25,20 +24,77 @@ int findRatio(QString filename,int width,int height)
         }
     }
     file.close();
+    return basedFile;
+}
 
+std::vector<int> findRatioAndProp(QString filename,int width,int height)
+{
+    QString basedFile = findBasedPath(filename);
+
+    std::vector<int> ans;
     if(basedFile == " ")
     {
-        return 0;
+        ans.push_back(0);
+        return ans;
     }
     else
     {
         QImage image(basedFile);
-        printf("based layer's file have width : %d \n",image.width());
-        printf("based layer's file have height : %d \n",image.height());
+        printf("Set each layer have maximum width : %d \n",image.width());
+        printf("Set each layer have maximum height : %d \n",image.height());
         float sc = float(image.width())/width;
         float sct = float(image.height())/height;
-        return (int)std::max(sc,sct);
+        int scal = (int)std::max(sc,sct);
+        ans.push_back(scal*width);
+        ans.push_back(scal*height);
+        ans.push_back(scal);
+        return ans;
     }
+}
+
+void addAllImages(MainWindow &w,QString textfile)
+{
+    printf("Loading image to windows\n");
+    QFile file(textfile);
+    if(!file.open(QIODevice::ReadOnly)) {
+        QMessageBox::information(0, "error", file.errorString());
+    }
+
+    QTextStream in(&file);
+    QString basedFile = " ";
+    int line = 0;
+    std::vector<int> nextDiff;
+    std::map<int,int> layerDiff;
+    int numLayer;
+    while(!in.atEnd()) {
+        QString lineText = in.readLine();
+        QStringList fields = lineText.split(",");
+        if(line == 0)
+        {
+            QString temp = fields.at(0);
+            numLayer = temp.toInt();
+            for(int i = 1;i<numLayer;i++)
+            {
+                temp = fields.at(i);
+                nextDiff.push_back(temp.toInt());
+            }
+        }
+        else {
+            QString l = fields.at(0);
+            QString temp = fields.at(1);
+            if(line < nextDiff.size()+1)
+            {
+                int n = l.toInt();
+                layerDiff[n] = nextDiff[line-1];
+                printf("Layer %d to %d have %d millimeter\n",n,n+1,layerDiff[n]);
+            }
+            w.addImage(temp,l.toInt());
+        }
+        line++;
+    }
+    file.close();
+
+    w.nextDiff = layerDiff;
 }
 
 int main(int argc, char *argv[])
@@ -69,38 +125,33 @@ int main(int argc, char *argv[])
         {
             int realWidth = atoi(argv[2]);
             int realHeight = atoi(argv[3]);
-            int pixPerReal;
+            int pixPerReal,maxWidth,maxHeight;
             if(QString(argv[4]) == QString("--auto-scale"))
             {
-                pixPerReal = findRatio(filename,realWidth,realHeight);
+                std::vector<int> prop = findRatioAndProp(filename,realWidth,realHeight);
+                maxWidth = prop[0];
+                maxHeight = prop[1];
+                pixPerReal = prop[2];
             }
             else
             {
+                QString basedPath = findBasedPath(filename);
+                QImage im(basedPath);
                 pixPerReal = atoi(argv[4]);
+                maxWidth = std::min(pixPerReal * realWidth,im.width());
+                maxHeight = std::min(pixPerReal * realHeight,im.height());
+                printf("Set each layer have maximum width : %d \n",maxWidth);
+                printf("Set each layer have maximum height : %d \n",maxHeight);
             }
             w.real2Scale = pixPerReal;
+            w.maxWidth = maxWidth;
+            w.maxHeight = maxHeight;
             printf("Set %d pixels per one millimeter.\n", pixPerReal);
 
-            /*printf("Your object have %d layers \n",numberOfLayers);
-            w.setNumLayers(numberOfLayers);
-            char* moderator = argv[3];
-            if(QString(moderator) == QString("-r"))
-            {
-                if(argc > 3)
-                {
-                    printf("set based layer to have maximum pixels as 50x50");
-                    w.enableResize(50,50);
-                }
-            }
-
-            for(int i=0;i<numberOfLayers;i++)
-            {
-                printf("Loading: /home/zanooker/Arrow.png as layer %d \n", i);
-                w.addImage("/home/zanooker/Arrow.png",i);
-            }
+            addAllImages(w,filename);
             w.visualize();
             w.show();
-            return a.exec();*/
+            return a.exec();
         }
 
     }

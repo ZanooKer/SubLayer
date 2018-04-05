@@ -29,12 +29,12 @@ void MainWindow::rotateOneStep()
     glWidgets->rotateBy(0, +2 * 16, 0);
 }
 
-void MainWindow::enableResize(int w,int h)
+/*void MainWindow::enableResize(int w,int h)
 {
     reWidth = w;
     reHeight = h;
     resize = true;
-}
+}*/
 
 void MainWindow::visualize()
 {
@@ -54,15 +54,30 @@ void MainWindow::visualize()
 void MainWindow::addImage(QString filename,int layer)
 {
     QImage image(filename);
-    /*if(resize)
+    printf("Add %s as layer %d \n",filename.toStdString().c_str(),layer);
+    if(image.width() > maxWidth && image.height() >  maxHeight)
     {
         image = resizeResolution(image);
-    }*/
+    }
     PicturePiece pp(image,layer);
     pps.push_back(pp);
 }
 
-QImage resizeResolution(QImage in)
+QImage MainWindow::resizeResolution(QImage in)
 {
-    //set
+    if(in.width() <= maxWidth && in.height()<= maxHeight)
+    {
+        printf("Not necessary to decrease resolution\n");
+        return in;
+    }
+    else
+    {
+        int ratio = (int)std::max(in.width()/(float)maxWidth , in.height()/(float)maxHeight);
+        int afWidth = (int) (ratio*maxWidth);
+        int afHeight = (int) (ratio*maxHeight);
+
+        printf("Decrease resolution from %d , %d to %d , %d \n", in.width(),in.height(),afWidth,afHeight);
+        QImage ans = in.scaled(QSize(afWidth,afHeight),Qt::KeepAspectRatio);
+        return ans;
+    }
 }
