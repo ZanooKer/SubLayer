@@ -27,12 +27,16 @@ SOURCES += \
         main.cpp \
         mainwindow.cpp \
     picturepiece.cpp \
-    glwidget.cpp
+    glwidget.cpp \
+    pixelbox.cpp \
+    pixelplane.cpp
 
 HEADERS += \
         mainwindow.h \
     picturepiece.h \
-    glwidget.h
+    glwidget.h \
+    pixelbox.h \
+    pixelplane.h
 
 FORMS += \
         mainwindow.ui

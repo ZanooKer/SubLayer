@@ -40,12 +40,16 @@ void MainWindow::setLayerDiff(std::map<int,int> diff)
     }
     this->layerDiff = temp;
 }
-/*void MainWindow::enableResize(int w,int h)
+
+std::vector<PicturePiece> MainWindow::getPPS()
 {
-    reWidth = w;
-    reHeight = h;
-    resize = true;
-}*/
+    return this->pps;
+}
+
+std::map<int,float> MainWindow::getLayerDiff()
+{
+    return this->layerDiff;
+}
 
 void MainWindow::visualize()
 {

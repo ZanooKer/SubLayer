@@ -1,6 +1,16 @@
 #include "mainwindow.h"
 #include <QApplication>
 #include <iostream>
+#include <cstdlib>
+#include <fstream>
+#include "pixelbox.h"
+
+template <typename T>
+static void
+_WriteElement(std::ostream &os, T element)
+{
+    os.write(reinterpret_cast<const char*>(&element), sizeof(T));
+}
 
 QString findBasedPath(QString textfile)
 {
@@ -132,18 +142,90 @@ bool addAllImages(MainWindow &w,QString textfile)
     return checkInvalidLayer(layerDiff,allLayers);
 }
 
+std::vector<int> fromStartToDest(std::map<int,int> eachDiff)
+{
+    std::vector<int> temp;
+    if(eachDiff.find(0) == eachDiff.end())
+    {
+        return temp;
+    }
+    temp.push_back(0);
+    int idx = 1;
+    temp.push_back(temp.back() + eachDiff[0]);
+    while(idx < eachDiff.size())
+    {
+        temp.push_back(temp.back()+eachDiff[idx]);
+        idx++;
+    }
+    return temp;
+
+}
+
+void addImageToGrid(PixelBox &pb,QString textfile)
+{
+    QFile file(textfile);
+    if(!file.open(QIODevice::ReadOnly)) {
+        QMessageBox::information(0, "error", file.errorString());
+    }
+
+    QTextStream in(&file);
+    int line = 0;
+    std::vector<int> nextDiff;
+    std::map<int,int> layerDiff;
+    std::list<int> allLayers;
+    std::map<int,QImage> imageL;
+    int numLayer;
+    while(!in.atEnd()) {
+        QString lineText = in.readLine();
+        QStringList fields = lineText.split(",");
+        if(line == 0)
+        {
+            QString temp = fields.at(0);
+            numLayer = temp.toInt();
+            for(int i = 1;i<numLayer;i++)
+            {
+                temp = fields.at(i);
+                nextDiff.push_back(temp.toInt());
+            }
+        }
+        else {
+            QString l = fields.at(0);
+            QString temp = fields.at(1);
+            printf("layer #%d : %s",l.toInt(),temp.toStdString().c_str());
+            imageL[l.toInt()] = QImage(temp);
+            allLayers.push_back(l.toInt());
+            if(line < nextDiff.size()+1)
+            {
+                int n = l.toInt();
+                layerDiff[n] = nextDiff[line-1];
+                printf(" -> below layer #%d : %d millimeter\n",n+1,layerDiff[n]);
+            }
+        }
+        line++;
+    }
+    file.close();
+    if(!checkInvalidLayer(layerDiff,allLayers))
+    {
+        nextDiff.clear();
+        return;
+    }
+
+    std::vector<int> gridHeight = fromStartToDest(layerDiff);
+    if(gridHeight.size() == imageL.size())
+    {
+        printf("AAAa");
+    }
+
+}
+
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
     MainWindow w;
 
-    //get mode of API : visualize or export
-    //set number of image
-    //set image file
-    //set based pixels of layers 0 (reference to other layer) : get in centimeter to pixels
-    //set different between each layers in millimeter
+    //./API --help
     //./API visualize 10 10 --auto-scale source.txt
-    //   0     1       2 3    4           5
+    //./API exportO3DP 10 10 --auto-scale source.txt out.o3dp
 
     QString cmd = " ";
     if(QString(argv[1]) == QString("--help"))
@@ -169,49 +251,61 @@ int main(int argc, char *argv[])
         printf("2. l0,l1 and so on are not necessary to be consecutive.But dn are related to ln. \n");
     }
 
-    else if(argc != 6)
+    else if(argc != 6 && argc != 7)
     {
+        printf("%d",argc);
         printf("You don't write in format as description. Please --help to see all configs.\n");
     }
     else
     {
         cmd = QString(argv[1]);
+        int realWidth = atoi(argv[2]);
+        int realHeight = atoi(argv[3]);
+        QString modeOfRes = QString(argv[4]);
         QString filename = QString(argv[5]);
+
+        int pixPerReal,maxWidth,maxHeight;
+        if(modeOfRes == QString("--auto-scale"))
+        {
+            std::vector<int> prop = findRatioAndProp(filename,realWidth,realHeight);
+            maxWidth = prop[0];
+            maxHeight = prop[1];
+            pixPerReal = prop[2];
+        }
+        else
+        {
+            pixPerReal = atoi(argv[4]);
+            maxWidth = pixPerReal*realWidth;
+            maxHeight = pixPerReal*realHeight;
+            printf("Set each layer have maximum width : %d \n",maxWidth);
+            printf("Set each layer have maximum height : %d \n",maxHeight);
+        }
+        printf("Set %d pixels per one millimeter.\n", pixPerReal);
+
         if(cmd == QString("visualize"))
         {
-            int realWidth = atoi(argv[2]);
-            int realHeight = atoi(argv[3]);
-            int pixPerReal,maxWidth,maxHeight;
-            if(QString(argv[4]) == QString("--auto-scale"))
-            {
-                std::vector<int> prop = findRatioAndProp(filename,realWidth,realHeight);
-                maxWidth = prop[0];
-                maxHeight = prop[1];
-                pixPerReal = prop[2];
-            }
-            else
-            {
-                pixPerReal = atoi(argv[4]);
-                maxWidth = pixPerReal*realWidth;
-                maxHeight = pixPerReal*realHeight;
-                printf("Set each layer have maximum width : %d \n",maxWidth);
-                printf("Set each layer have maximum height : %d \n",maxHeight);
-            }
+            printf("\n");
             w.real2Scale = pixPerReal;
             w.maxWidth = maxWidth;
             w.maxHeight = maxHeight;
-            printf("Set %d pixels per one millimeter.\n", pixPerReal);
+            bool addImg = addAllImages(w,filename);
+            if(!addImg)return 0;
 
             printf("\n");
-            if(addAllImages(w,filename)){
-                printf("\n");
-                printf("visualize...\n");
-                w.visualize();
-                w.show();
-                return a.exec();
-            }
+            printf("visualize...\n");
+            w.visualize();
+            w.show();
+            return a.exec();
         }
+        else if(cmd == QString("exportO3DP"))
+        {
+            //std::vector<int> gridHeight = getAllReal(filename);
+            PixelBox pb;
+            addImageToGrid(pb,filename);
+            //format material is 255*255*256 if that pixel equals to 0 means transparent(alpha 0)
 
+
+        }
     }
     //return a.exec();
 }

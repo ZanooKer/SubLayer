@@ -28,6 +28,8 @@ public:
     int maxWidth;
     int maxHeight;
     void setLayerDiff(std::map<int,int> diff);
+    std::vector<PicturePiece> getPPS();
+    std::map<int,float> getLayerDiff();
 
 private slots:
     void rotateOneStep();
