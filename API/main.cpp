@@ -227,6 +227,7 @@ int main(int argc, char *argv[])
             printf("Input Grid : %d %d %d\n",realWidth,realHeight,allHeight.back());
             pb.allocatePlane(realWidth,realHeight,allHeight.back());
 
+            printf("%d",allHeight.size());
             for(int i=0;i<allHeight.size();i++){
                 QImage img(raw.relate[i]);
                 pb.addImageToPlane(img,allHeight[i]);

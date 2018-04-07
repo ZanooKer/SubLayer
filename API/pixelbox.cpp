@@ -54,17 +54,15 @@ void PixelBox::writeO3DP(QString outfile,int w,int l,int h)
     _WriteElement(os,(int)1);
 
     for(int i = 0;i<h+1;i++){
-        printf("Write grid: %d ",i);
+        printf("Write grid Z: %d \n",i);
         int ratioH = h/height;
         int idx = i/ratioH;
         if(i % ratioH == 0)
         {
-            printf("-> have image\n");
             planes[idx].writeFile(os,w,l);
         }
         else
         {
-            printf("-> transparent layer\n");
             for(int j=0;j<l;j++)
             {
                 for(int k=0;k<w;k++){
