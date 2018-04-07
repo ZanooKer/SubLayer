@@ -10,7 +10,7 @@ class PixelBox
 {
 public:
     PixelBox();
-    void addImageToPlane(QImage img, int layer);
+    void addImageToPlane(QImage img, int realH);
     void allocatePlane(int width,int height,int top);
     void writeO3DP(QString outfile,int w,int l,int h);
 

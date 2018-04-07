@@ -223,21 +223,21 @@ int main(int argc, char *argv[])
         else if(cmd == QString("exportO3DP"))
         {
             PixelBox pb;
-
-
             std::vector<int> allHeight = fromStartToDest(raw.nextReal);
             printf("Input Grid : %d %d %d\n",realWidth,realHeight,allHeight.back());
-            int ratio = int(MM_TO_INCH * DPI); //from mm_to_inch and Default DPI (300-500)
-            int outGridW = realWidth*ratio;
-            int outGridL = realHeight*ratio;
-            int outGridH = allHeight.back()*ratio;
-            printf("Output Grid : %d %d %d \n",outGridW,outGridL,outGridH);
-            pb.allocatePlane(outGridW,outGridL,outGridH);
+            pb.allocatePlane(realWidth,realHeight,allHeight.back());
 
             for(int i=0;i<allHeight.size();i++){
                 QImage img(raw.relate[i]);
                 pb.addImageToPlane(img,allHeight[i]);
             }
+
+            int ratio = int(MM_TO_INCH * DPI); //from mm_to_inch and Default DPI (300-500)
+            int outGridW = realWidth*ratio;
+            int outGridL = realHeight*ratio;
+            int outGridH = allHeight.back()*ratio;
+            printf("Output Grid : %d %d %d \n",outGridW,outGridL,outGridH);
+
             QString out = QString(argv[6]);
             pb.writeO3DP(out,outGridW,outGridL,outGridH);
         }

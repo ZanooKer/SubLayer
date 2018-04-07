@@ -11,7 +11,8 @@ class PixelPlane
 public:
     PixelPlane(int minW, int minH, int maxW, int maxH);
     void addImage(QImage in);
-    void writeFile(std::ostream os);
+    void writeFile(std::ostream &os, int outw, int outh);
+    void checkImage();
 
 private:
     QImage image;

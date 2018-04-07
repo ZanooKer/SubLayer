@@ -14,8 +14,7 @@ PixelBox::PixelBox()
 
 void PixelBox::allocatePlane(int width,int length,int top)
 {
-    planes.clear();
-    for(int i=0;i<=top;i++)
+    for(int i=planes.size();i<=top;i++)
     {
         PixelPlane pp(0,0,width,length);
         planes.push_back(pp);
@@ -25,21 +24,25 @@ void PixelBox::allocatePlane(int width,int length,int top)
     this->height = top;
 }
 
-void PixelBox::addImageToPlane(QImage img, int layer)
+void PixelBox::addImageToPlane(QImage img, int realH)
 {
-    planes[layer].addImage(img);
+    planes[realH].addImage(img);
 }
 
 void PixelBox::writeO3DP(QString outfile,int w,int l,int h)
 {
+    printf("Write O3DP file: ...\n");
     std::ofstream os(outfile.toStdString().c_str(), std::ios::binary);
     const static std::string cookie("#OpenFab3DP V1.0 Binary");
     os.write(cookie.c_str(), cookie.size());
 
-    _WriteElement(os, width);
-    _WriteElement(os, length);
-    _WriteElement(os, height);
+    printf("- Write header\n");
+    //write size of outGrid
+    _WriteElement(os, w);
+    _WriteElement(os, l);
+    _WriteElement(os, h);
 
+    //write size of box
     _WriteElement(os, (double)0);
     _WriteElement(os, (double)0);
     _WriteElement(os, (double)0);
@@ -47,5 +50,27 @@ void PixelBox::writeO3DP(QString outfile,int w,int l,int h)
     _WriteElement(os, (double)0);
     _WriteElement(os, (double)0);
 
+    //write number of material
+    _WriteElement(os,(int)1);
 
+    for(int i = 0;i<h+1;i++){
+        printf("Write grid: %d ",i);
+        int ratioH = h/height;
+        int idx = i/ratioH;
+        if(i % ratioH == 0)
+        {
+            printf("-> have image\n");
+            planes[idx].writeFile(os,w,l);
+        }
+        else
+        {
+            printf("-> transparent layer\n");
+            for(int j=0;j<l;j++)
+            {
+                for(int k=0;k<w;k++){
+                    _WriteElement(os,(char)0);
+                }
+            }
+        }
+    }
 }
