@@ -5,6 +5,12 @@
 #include <fstream>
 #include "pixelbox.h"
 
+struct dataset{
+    int numLayer;
+    std::map<int,int> nextReal;
+    std::map<int,QString> relate;
+};
+
 template <typename T>
 static void
 _WriteElement(std::ostream &os, T element)
@@ -12,74 +18,66 @@ _WriteElement(std::ostream &os, T element)
     os.write(reinterpret_cast<const char*>(&element), sizeof(T));
 }
 
-QString findBasedPath(QString textfile)
+dataset prepareFromTxt(QString textfile)
 {
-    printf("find ratio from based layer (layer 0)\n");
     QFile file(textfile);
     if(!file.open(QIODevice::ReadOnly)) {
         QMessageBox::information(0, "error", file.errorString());
     }
 
     QTextStream in(&file);
-    QString basedFile = " ";
+    dataset d;
+    std::vector<int> next;
+    int lines = 0;
     while(!in.atEnd()) {
         QString line = in.readLine();
         QStringList fields = line.split(",");
         QString l = fields.at(0);
-        if(l.toInt() == 0)
+        if(lines == 0)
         {
-            printf("found %s as based layer\n", fields.at(1).toStdString().c_str());
-            basedFile = fields.at(1);
-            break;
+            d.numLayer = l.toInt();
+            for(int i=1;i<d.numLayer;i++)
+            {
+                QString s = fields.at(i);
+                next.push_back(s.toInt());
+            }
         }
+        else
+        {
+            QString nL = fields.at(0);
+            QString path = fields.at(1);
+            if(lines-1 < (int) next.size())
+                d.nextReal[nL.toInt()] = next[lines-1];
+            d.relate[nL.toInt()] = path;
+        }
+        lines++;
     }
     file.close();
-    return basedFile;
+    return d;
 }
 
-std::vector<int> findRatioAndProp(QString filename,int width,int height)
+int findRatio(QImage im,int rw,int rh)
 {
-    QString basedFile = findBasedPath(filename);
-
-    std::vector<int> ans;
-    if(basedFile == " ")
-    {
-        ans.push_back(0);
-        return ans;
-    }
-    else
-    {
-        QImage image(basedFile);
-        printf("Set each layer have maximum width : %d \n",image.width());
-        printf("Set each layer have maximum height : %d \n",image.height());
-        float sc = float(image.width())/width;
-        float sct = float(image.height())/height;
-        int scal = (int)std::max(sc,sct);
-        ans.push_back(scal*width);
-        ans.push_back(scal*height);
-        ans.push_back(scal);
-        return ans;
-    }
+   return std::max(1,std::max(im.width()/rw,im.height()/rh));
 }
 
-bool checkInvalidLayer(std::map<int,int> diff,std::list<int> layers)
+bool checkInvalidLayer(std::map<int,int> diff,std::map<int,QString> alls)
 {
-    printf("\nchecking for invalid layers... \n");
     bool ans = false;
     for(std::pair<int,int> e:diff)
     {
         printf("check for layer %d and %d...",e.first,e.first+1);
         bool firstInVect = false;
         bool lastInVect = false;
-        for(int i:layers)
+        for(std::pair<int,QString> i:alls)
         {
             if(firstInVect && lastInVect)
                 break;
-            if(i == e.first && !firstInVect)
+            if(i.first == e.first && !firstInVect)
             {
                 firstInVect = true;
             }
-            if(i == e.first+1 && !lastInVect)
+            if(i.first == e.first+1 && !lastInVect)
             {
                 lastInVect = true;
             }
@@ -95,51 +93,13 @@ bool checkInvalidLayer(std::map<int,int> diff,std::list<int> layers)
     return !ans;
 }
 
-bool addAllImages(MainWindow &w,QString textfile)
+void addAllImages(MainWindow &w,std::map<int,QString> pathL)
 {
     printf("Loading image to windows\n");
-    QFile file(textfile);
-    if(!file.open(QIODevice::ReadOnly)) {
-        QMessageBox::information(0, "error", file.errorString());
+    for(std::pair<int,QString> p:pathL)
+    {
+        w.addImage(p.second,p.first);
     }
-
-    QTextStream in(&file);
-    QString basedFile = " ";
-    int line = 0;
-    std::vector<int> nextDiff;
-    std::map<int,int> layerDiff;
-    std::list<int> allLayers;
-    int numLayer;
-    while(!in.atEnd()) {
-        QString lineText = in.readLine();
-        QStringList fields = lineText.split(",");
-        if(line == 0)
-        {
-            QString temp = fields.at(0);
-            numLayer = temp.toInt();
-            for(int i = 1;i<numLayer;i++)
-            {
-                temp = fields.at(i);
-                nextDiff.push_back(temp.toInt());
-            }
-        }
-        else {
-            QString l = fields.at(0);
-            QString temp = fields.at(1);
-            w.addImage(temp,l.toInt());
-            allLayers.push_back(l.toInt());
-            if(line < nextDiff.size()+1)
-            {
-                int n = l.toInt();
-                layerDiff[n] = nextDiff[line-1];
-                printf("Layer %d to %d have %d millimeter\n",n,n+1,layerDiff[n]);
-            }
-        }
-        line++;
-    }
-    file.close();
-    w.setLayerDiff(layerDiff);
-    return checkInvalidLayer(layerDiff,allLayers);
 }
 
 std::vector<int> fromStartToDest(std::map<int,int> eachDiff)
@@ -158,64 +118,6 @@ std::vector<int> fromStartToDest(std::map<int,int> eachDiff)
         idx++;
     }
     return temp;
-
-}
-
-void addImageToGrid(PixelBox &pb,QString textfile)
-{
-    QFile file(textfile);
-    if(!file.open(QIODevice::ReadOnly)) {
-        QMessageBox::information(0, "error", file.errorString());
-    }
-
-    QTextStream in(&file);
-    int line = 0;
-    std::vector<int> nextDiff;
-    std::map<int,int> layerDiff;
-    std::list<int> allLayers;
-    std::map<int,QImage> imageL;
-    int numLayer;
-    while(!in.atEnd()) {
-        QString lineText = in.readLine();
-        QStringList fields = lineText.split(",");
-        if(line == 0)
-        {
-            QString temp = fields.at(0);
-            numLayer = temp.toInt();
-            for(int i = 1;i<numLayer;i++)
-            {
-                temp = fields.at(i);
-                nextDiff.push_back(temp.toInt());
-            }
-        }
-        else {
-            QString l = fields.at(0);
-            QString temp = fields.at(1);
-            printf("layer #%d : %s",l.toInt(),temp.toStdString().c_str());
-            imageL[l.toInt()] = QImage(temp);
-            allLayers.push_back(l.toInt());
-            if(line < nextDiff.size()+1)
-            {
-                int n = l.toInt();
-                layerDiff[n] = nextDiff[line-1];
-                printf(" -> below layer #%d : %d millimeter\n",n+1,layerDiff[n]);
-            }
-        }
-        line++;
-    }
-    file.close();
-    if(!checkInvalidLayer(layerDiff,allLayers))
-    {
-        nextDiff.clear();
-        return;
-    }
-
-    std::vector<int> gridHeight = fromStartToDest(layerDiff);
-    if(gridHeight.size() == imageL.size())
-    {
-        printf("AAAa");
-    }
-
 }
 
 int main(int argc, char *argv[])
@@ -250,7 +152,6 @@ int main(int argc, char *argv[])
         printf("Suggestions:\n1. d0 is the number of millimeter between l0 and l0 plus one. NOT! l0 and l1\n");
         printf("2. l0,l1 and so on are not necessary to be consecutive.But dn are related to ln. \n");
     }
-
     else if(argc != 6 && argc != 7)
     {
         printf("%d",argc);
@@ -264,32 +165,54 @@ int main(int argc, char *argv[])
         QString modeOfRes = QString(argv[4]);
         QString filename = QString(argv[5]);
 
+        //Prepare data from text file
+        //number of layer
+        //millimeter to next layer
+        //#layer and image
+        printf("prepare dataset\n");
+        dataset raw = prepareFromTxt(filename);
+
+        //check that next layer is valid or not
+        printf("\ncheck for invalid layers\n");
+        if(!checkInvalidLayer(raw.nextReal,raw.relate))
+            return 0;
+
+        //check that it have based layer
+        if(raw.relate.find(0) == raw.relate.end()){
+            printf("Cannot find based layer\n");
+            return 0;
+        }
+
+        printf("\n");
+        //find pixel per millimeter
         int pixPerReal,maxWidth,maxHeight;
         if(modeOfRes == QString("--auto-scale"))
         {
-            std::vector<int> prop = findRatioAndProp(filename,realWidth,realHeight);
-            maxWidth = prop[0];
-            maxHeight = prop[1];
-            pixPerReal = prop[2];
+            printf("Set auto scale based on layer's images : %s \n",raw.relate[0].toStdString().c_str());
+            QImage im(raw.relate[0]);
+            maxWidth = im.width();
+            maxHeight = im.height();
+            pixPerReal = findRatio(im,realWidth,realHeight);
         }
         else
         {
-            pixPerReal = atoi(argv[4]);
+            pixPerReal = modeOfRes.toInt();
             maxWidth = pixPerReal*realWidth;
             maxHeight = pixPerReal*realHeight;
-            printf("Set each layer have maximum width : %d \n",maxWidth);
-            printf("Set each layer have maximum height : %d \n",maxHeight);
         }
+        printf("Set each layer have maximum width : %d \n",maxWidth);
+        printf("Set each layer have maximum height : %d \n",maxHeight);
         printf("Set %d pixels per one millimeter.\n", pixPerReal);
 
+        printf("\n");
         if(cmd == QString("visualize"))
         {
             printf("\n");
             w.real2Scale = pixPerReal;
             w.maxWidth = maxWidth;
             w.maxHeight = maxHeight;
-            bool addImg = addAllImages(w,filename);
-            if(!addImg)return 0;
+            w.setLayerDiff(raw.nextReal);
+            addAllImages(w,raw.relate);
 
             printf("\n");
             printf("visualize...\n");
@@ -299,13 +222,24 @@ int main(int argc, char *argv[])
         }
         else if(cmd == QString("exportO3DP"))
         {
-            //std::vector<int> gridHeight = getAllReal(filename);
             PixelBox pb;
-            addImageToGrid(pb,filename);
-            //format material is 255*255*256 if that pixel equals to 0 means transparent(alpha 0)
 
 
+            std::vector<int> allHeight = fromStartToDest(raw.nextReal);
+            printf("Input Grid : %d %d %d\n",realWidth,realHeight,allHeight.back());
+            int ratio = int(MM_TO_INCH * DPI); //from mm_to_inch and Default DPI (300-500)
+            int outGridW = realWidth*ratio;
+            int outGridL = realHeight*ratio;
+            int outGridH = allHeight.back()*ratio;
+            printf("Output Grid : %d %d %d \n",outGridW,outGridL,outGridH);
+            pb.allocatePlane(outGridW,outGridL,outGridH);
+
+            for(int i=0;i<allHeight.size();i++){
+                QImage img(raw.relate[i]);
+                pb.addImageToPlane(img,allHeight[i]);
+            }
+            QString out = QString(argv[6]);
+            pb.writeO3DP(out,outGridW,outGridL,outGridH);
         }
     }
-    //return a.exec();
 }

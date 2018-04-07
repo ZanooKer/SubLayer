@@ -2,16 +2,21 @@
 #define PIXELPLANE_H
 
 #include <QImage>
+#include <QColor>
+#include <cstdlib>
+#include <fstream>
 
 class PixelPlane
 {
 public:
     PixelPlane(int minW, int minH, int maxW, int maxH);
-    bool AddImage(QImage in);
+    void addImage(QImage in);
+    void writeFile(std::ostream os);
 
 private:
     QImage image;
     int minHeightGrid, minWidthGrid, maxHeightGrid, maxWidthGrid;
+    std::pair<int,int> center;
 };
 
 #endif // PIXELPLANE_H

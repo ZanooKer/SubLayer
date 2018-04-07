@@ -1770,7 +1770,9 @@ main.o: ../API/main.cpp ../API/mainwindow.h \
 		../../Qt/5.10.1/gcc_64/include/QtGui/QOpenGLFunctions \
 		../../Qt/5.10.1/gcc_64/include/QtGui/QOpenGLBuffer \
 		../../Qt/5.10.1/gcc_64/include/QtCore/QDir \
-		../../Qt/5.10.1/gcc_64/include/QtWidgets/QApplication
+		../../Qt/5.10.1/gcc_64/include/QtWidgets/QApplication \
+		../API/pixelbox.h \
+		../API/pixelplane.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o main.o ../API/main.cpp
 
 mainwindow.o: ../API/mainwindow.cpp ../API/mainwindow.h \
@@ -2457,10 +2459,157 @@ glwidget.o: ../API/glwidget.cpp ../API/glwidget.h \
 		../../Qt/5.10.1/gcc_64/include/QtGui/QMouseEvent
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o glwidget.o ../API/glwidget.cpp
 
-pixelbox.o: ../API/pixelbox.cpp ../API/pixelbox.h
+pixelbox.o: ../API/pixelbox.cpp ../API/pixelbox.h \
+		../API/pixelplane.h \
+		../../Qt/5.10.1/gcc_64/include/QtGui/QImage \
+		../../Qt/5.10.1/gcc_64/include/QtGui/qimage.h \
+		../../Qt/5.10.1/gcc_64/include/QtGui/qtguiglobal.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qglobal.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qconfig-bootstrapped.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qconfig.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qtcore-config.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qsystemdetection.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qprocessordetection.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qcompilerdetection.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qtypeinfo.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qsysinfo.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qlogging.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qflags.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qatomic.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qbasicatomic.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qatomic_bootstrap.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qgenericatomic.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qatomic_cxx11.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qatomic_msvc.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qglobalstatic.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qmutex.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qnumeric.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qversiontagging.h \
+		../../Qt/5.10.1/gcc_64/include/QtGui/qtgui-config.h \
+		../../Qt/5.10.1/gcc_64/include/QtGui/qcolor.h \
+		../../Qt/5.10.1/gcc_64/include/QtGui/qrgb.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qnamespace.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qstringlist.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qlist.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qalgorithms.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qiterator.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qrefcount.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qarraydata.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qhashfunctions.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qstring.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qchar.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qbytearray.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qstringliteral.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qstringalgorithms.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qstringview.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qstringbuilder.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qpair.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qbytearraylist.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qregexp.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qstringmatcher.h \
+		../../Qt/5.10.1/gcc_64/include/QtGui/qrgba64.h \
+		../../Qt/5.10.1/gcc_64/include/QtGui/qpaintdevice.h \
+		../../Qt/5.10.1/gcc_64/include/QtGui/qwindowdefs.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qobjectdefs.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qobjectdefs_impl.h \
+		../../Qt/5.10.1/gcc_64/include/QtGui/qwindowdefs_win.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qrect.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qmargins.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qsize.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qpoint.h \
+		../../Qt/5.10.1/gcc_64/include/QtGui/qpixelformat.h \
+		../../Qt/5.10.1/gcc_64/include/QtGui/qtransform.h \
+		../../Qt/5.10.1/gcc_64/include/QtGui/qmatrix.h \
+		../../Qt/5.10.1/gcc_64/include/QtGui/qpolygon.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qvector.h \
+		../../Qt/5.10.1/gcc_64/include/QtGui/qregion.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qdatastream.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qscopedpointer.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qiodevice.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qobject.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qcoreevent.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qmetatype.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qvarlengtharray.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qcontainerfwd.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qobject_impl.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qline.h \
+		../../Qt/5.10.1/gcc_64/include/QtGui/qpainterpath.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o pixelbox.o ../API/pixelbox.cpp
 
-pixelplane.o: ../API/pixelplane.cpp ../API/pixelplane.h
+pixelplane.o: ../API/pixelplane.cpp ../API/pixelplane.h \
+		../../Qt/5.10.1/gcc_64/include/QtGui/QImage \
+		../../Qt/5.10.1/gcc_64/include/QtGui/qimage.h \
+		../../Qt/5.10.1/gcc_64/include/QtGui/qtguiglobal.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qglobal.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qconfig-bootstrapped.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qconfig.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qtcore-config.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qsystemdetection.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qprocessordetection.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qcompilerdetection.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qtypeinfo.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qsysinfo.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qlogging.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qflags.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qatomic.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qbasicatomic.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qatomic_bootstrap.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qgenericatomic.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qatomic_cxx11.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qatomic_msvc.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qglobalstatic.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qmutex.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qnumeric.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qversiontagging.h \
+		../../Qt/5.10.1/gcc_64/include/QtGui/qtgui-config.h \
+		../../Qt/5.10.1/gcc_64/include/QtGui/qcolor.h \
+		../../Qt/5.10.1/gcc_64/include/QtGui/qrgb.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qnamespace.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qstringlist.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qlist.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qalgorithms.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qiterator.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qrefcount.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qarraydata.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qhashfunctions.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qstring.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qchar.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qbytearray.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qstringliteral.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qstringalgorithms.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qstringview.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qstringbuilder.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qpair.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qbytearraylist.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qregexp.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qstringmatcher.h \
+		../../Qt/5.10.1/gcc_64/include/QtGui/qrgba64.h \
+		../../Qt/5.10.1/gcc_64/include/QtGui/qpaintdevice.h \
+		../../Qt/5.10.1/gcc_64/include/QtGui/qwindowdefs.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qobjectdefs.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qobjectdefs_impl.h \
+		../../Qt/5.10.1/gcc_64/include/QtGui/qwindowdefs_win.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qrect.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qmargins.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qsize.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qpoint.h \
+		../../Qt/5.10.1/gcc_64/include/QtGui/qpixelformat.h \
+		../../Qt/5.10.1/gcc_64/include/QtGui/qtransform.h \
+		../../Qt/5.10.1/gcc_64/include/QtGui/qmatrix.h \
+		../../Qt/5.10.1/gcc_64/include/QtGui/qpolygon.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qvector.h \
+		../../Qt/5.10.1/gcc_64/include/QtGui/qregion.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qdatastream.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qscopedpointer.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qiodevice.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qobject.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qcoreevent.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qmetatype.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qvarlengtharray.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qcontainerfwd.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qobject_impl.h \
+		../../Qt/5.10.1/gcc_64/include/QtCore/qline.h \
+		../../Qt/5.10.1/gcc_64/include/QtGui/qpainterpath.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o pixelplane.o ../API/pixelplane.cpp
 
 moc_mainwindow.o: moc_mainwindow.cpp 
