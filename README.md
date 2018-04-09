@@ -22,9 +22,9 @@ run ./API [cmd] [millimeter in width] [millimeter in height] [resolution mode] [
 
 Input text file format:
 _____________________________
-| #layers,dl0,dl1,d2,...    |
+| #layers,dl0,dl1,d2,.../t|
 
-| #l0,image1.png            |
+| #l0,image1.png/t/t|
 
 | #l1,image2.png            |
 
