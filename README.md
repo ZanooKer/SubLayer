@@ -52,5 +52,7 @@ Suggestion:
 _______________________________________________________
 
 For example:
+
 -API visualize 100 100 --auto-scale example.txt
+
 -API exportO3DP 100 100 --auto-scale example.txt o.o3dp
