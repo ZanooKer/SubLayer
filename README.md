@@ -1,7 +1,9 @@
 # SubLayer
 
 How to run:
+
 from folder build-API
+
 run ./API [cmd] [millimeter in width] [millimeter in height] [resolution mode] [input text file] [output file]
 
 [cmd] can be help(to see all functions), visualize and exportO3DP
