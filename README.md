@@ -49,3 +49,8 @@ image1.png,image2.png is the input image path
 Suggestion:
 
 #l0,#l1,... can be non-consecutive, but each one have to related to dl(n)
+_______________________________________________________
+
+For example:
+-API visualize 100 100 --auto-scale example.txt
+-API exportO3DP 100 100 --auto-scale example.txt o.o3dp
