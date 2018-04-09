@@ -3,9 +3,9 @@
 How to run:
 
 from folder build-API
-
+________________________________________________________________________________________________________________
 run ./API [cmd] [millimeter in width] [millimeter in height] [resolution mode] [input text file] [output file]
-
+________________________________________________________________________________________________________________
 [cmd] can be help(to see all functions), visualize and exportO3DP
 
 [millimeter in width] is the number of millimeters in the width of the based layer
@@ -20,11 +20,15 @@ run ./API [cmd] [millimeter in width] [millimeter in height] [resolution mode] [
 
 [output file] is the O3DP file as the output of the program
 
+
+
+_________________________________________________________________________________
+
 Input text file format:
 _____________________________
-| #layers,dl0,dl1,d2,.../t|
+| #layers,dl0,dl1,d2,...    |
 
-| #l0,image1.png/t/t|
+| #l0,image1.png            |
 
 | #l1,image2.png            |
 
