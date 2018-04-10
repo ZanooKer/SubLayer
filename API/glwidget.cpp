@@ -12,6 +12,7 @@ GLWidget::GLWidget(QWidget *parent)
       program(0)
 {
     memset(textures, 0, sizeof(textures));
+    winscale = 0.5f;
 }
 
 GLWidget::~GLWidget()
@@ -119,7 +120,7 @@ void GLWidget::paintGL()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     QMatrix4x4 m;
-    m.ortho(-0.5f, +0.5f, +0.5f, -0.5f, 4.0f, 15.0f);
+    m.ortho(-1*winscale, winscale, winscale, -1*winscale, 4.0f, 15.0f);
     m.translate(0.0f, 0.0f, -10.0f);
     m.rotate(xRot / 16.0f, 1.0f, 0.0f, 0.0f);
     m.rotate(yRot / 16.0f, 0.0f, 1.0f, 0.0f);
@@ -165,6 +166,19 @@ void GLWidget::mouseReleaseEvent(QMouseEvent * /* event */)
     emit clicked();
 }
 
+void GLWidget::wheelEvent(QWheelEvent *event)
+{
+    if(event->angleDelta().y() > 0){
+        if(winscale < 0.8f)winscale += 0.05f;
+        update();
+    }
+    if(event->angleDelta().y() < 0){
+        if(winscale > 0.2f)winscale -= 0.05f;
+        update();
+    }
+
+}
+
 void GLWidget::makeObject(std::vector<PicturePiece> pps)
 {
     if(sizeof pps == 0)return;
@@ -181,8 +195,9 @@ void GLWidget::makeObject(std::vector<PicturePiece> pps)
         for(int s = 0; s<4; s++)
         {
             coords[j][s][0] = (s==0 || s==3)?boundW:-1*boundW;
-            coords[j][s][1] = ld[pps[j].layer];
+            coords[j][s][1] = -1*ld[pps[j].layer];
             coords[j][s][2] = (s<2)?boundH:-1*boundH;
+            printf("%f %f %f\n",coords[j][s][0],coords[j][s][1],coords[j][s][2]);
         }
     }
     for (int j = 0; j < numberOfPic; ++j)

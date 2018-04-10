@@ -37,6 +37,7 @@ protected:
     void mousePressEvent(QMouseEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
     void mouseReleaseEvent(QMouseEvent *event) override;
+    void wheelEvent(QWheelEvent *event);
 
 private:
     void makeObject(std::vector<PicturePiece> pps);
@@ -47,6 +48,7 @@ private:
     int xRot;
     int yRot;
     int zRot;
+    float winscale;
     int numberOfPic;
     int maxWidth,maxHeight;
     std::map<int,float> ld;

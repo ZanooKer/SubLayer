@@ -18,7 +18,7 @@ _WriteElement(std::ostream &os, T element)
     os.write(reinterpret_cast<const char*>(&element), sizeof(T));
 }
 
-dataset prepareFromTxt(QString textfile)
+dataset prepareIndiv(QString textfile)
 {
     QFile file(textfile);
     if(!file.open(QIODevice::ReadOnly)) {
@@ -31,18 +31,20 @@ dataset prepareFromTxt(QString textfile)
     int lines = 0;
     while(!in.atEnd()) {
         QString line = in.readLine();
+        printf("%s\n",line.toStdString().c_str());
         QStringList fields = line.split(",");
         QString l = fields.at(0);
-        if(lines == 0)
+        if(lines == 1)
         {
             d.numLayer = l.toInt();
+            printf("%d\n",d.numLayer);
             for(int i=1;i<d.numLayer;i++)
             {
                 QString s = fields.at(i);
                 next.push_back(s.toInt());
             }
         }
-        else
+        else if(lines > 1)
         {
             QString nL = fields.at(0);
             QString path = fields.at(1);
@@ -54,6 +56,113 @@ dataset prepareFromTxt(QString textfile)
     }
     file.close();
     return d;
+}
+
+dataset prepareTerrain(QString textfile,int widthProduct,int heightProduct)
+{
+    QFile file(textfile);
+    if(!file.open(QIODevice::ReadOnly)) {
+        QMessageBox::information(0, "error", file.errorString());
+    }
+
+    std::map<int,QString> layNumToImg;
+    std::vector<int> eachLayHeight;;
+
+    QTextStream in(&file);
+    QImage imageBased;
+    dataset d;
+    int widthPict,heightPict;
+    int lines = 0;
+    while(!in.atEnd()) {
+        QString line = in.readLine();
+        QStringList fields = line.split(",");
+        if(lines==1) //read header
+        {
+            d.numLayer = fields.at(0).toInt();
+            layNumToImg[0] = QString(fields.at(1));
+            imageBased = QImage(QString(fields.at(1)));
+        }
+        else if(lines == 2)
+        {
+            widthPict = fields.at(0).toInt();
+            heightPict = fields.at(1).toInt();
+        }
+        else if(lines > 2)
+        {
+            eachLayHeight.push_back(fields.at(0).toInt());
+            int rf,gf,bf;
+            rf = fields.at(1).toInt();
+            gf = fields.at(2).toInt();
+            bf = fields.at(3).toInt();
+            QImage temp = imageBased;
+            for(int i=0;i<imageBased.height();i++)
+            {
+                for(int j=0;j<imageBased.width();j++)
+                {
+                    QColor pixel = imageBased.pixelColor(j,i);
+                    QColor p(0,0,0,0);
+                    if(std::abs(pixel.red()-rf) < 10 &&
+                            std::abs(pixel.green()-gf) < 10 &&
+                            std::abs(pixel.blue()-bf) < 10){
+                        p = pixel;
+                    }
+                    temp.setPixelColor(j,i,p);
+                }
+            }
+            char a[50];
+            std::sprintf(a,"temp%d.png",lines-2);
+            QString pathOut(a);
+            QImageWriter iw(pathOut);
+            iw.setOptimizedWrite( true );
+            iw.setProgressiveScanWrite( true );
+            iw.write(temp);
+            layNumToImg[fields.at(0).toInt()] = pathOut;
+        }
+        lines++;
+    }
+    int nl = 0;
+    int currentH = 0;
+    d.relate[0] = layNumToImg[0];
+    float scale = std::max(widthProduct*1.00f/widthPict,heightProduct*1.00f/heightPict);
+    for (auto it=++layNumToImg.begin(); it!=layNumToImg.end(); ++it)
+    {
+        d.nextReal[nl] = (int)std::ceil((it->first - currentH)*scale);
+        currentH = it->first;
+        nl++;
+        printf("write file: %s as heights %d -> layer : %d \n",it->second.toStdString().c_str(),it->first,nl);
+        d.relate[nl] = it->second;
+    }
+    return d;
+}
+
+dataset prepareFromText(QString textfile,int widthProduct,int heightProduct)
+{
+    QFile file(textfile);
+    if(!file.open(QIODevice::ReadOnly)) {
+        QMessageBox::information(0, "error", file.errorString());
+    }
+
+    QTextStream in(&file);
+    dataset d;
+    std::vector<int> next;
+    int lines = 0;
+    while(!in.atEnd()) {
+        if(lines == 0)
+        {
+            QString line = in.readLine();
+            QStringList fields = line.split(",");
+            QString l = fields.at(0);
+            if(l == QString("Single"))
+            {
+                printf("A");
+                return prepareIndiv(textfile);
+            }
+            else if(l == QString("Map"))
+            {
+                return prepareTerrain(textfile,widthProduct,heightProduct);
+            }
+        }
+    }
 }
 
 int findRatio(QImage im,int rw,int rh)
@@ -142,7 +251,8 @@ int main(int argc, char *argv[])
         printf("text file describes number of layers, millimeter between each layers, layer number and image paths related to layer number\n");
         printf("Example of txt files is \n");
         printf("----------------------------------------------------\n");
-        printf("|#layers,d0,d1,d2,...\t| \n"
+        printf("|Single\t\t\t|\n"
+               "|#layers,d0,d1,d2,...\t| \n"
                "|l0,image0.png\t\t|\n"
                "|l1,image1.png\t\t|\n"
                "|.\t\t\t|\n"
@@ -151,6 +261,19 @@ int main(int argc, char *argv[])
         printf("----------------------------------------------------\n");
         printf("Suggestions:\n1. d0 is the number of millimeter between l0 and l0 plus one. NOT! l0 and l1\n");
         printf("2. l0,l1 and so on are not necessary to be consecutive.But dn are related to ln. \n");
+        printf("----------------------------------------------------\n");
+        printf("|Map\t\t\t\t|\n"
+               "|#layers,image_map.png...\t| \n"
+               "|realX,realY\t\t\t|\n"
+               "|realZ1,red1,green1,blue1\t|\n"
+               "|realZ2,red2,green2,blue2\t|\n"
+               "|realZ3,red3,green3,blue3\t|\n"
+               "|.\t\t\t\t|\n"
+               "|.\t\t\t\t|\n"
+               "|.\t\t\t\t|\n");
+        printf("----------------------------------------------------\n");
+        printf("Suggestions:\n1. realX,realY,realZ(n) is the distance of the real world in map.\n"
+               "2. red(n),green(n),blue(n) related to realZ(n)\n");
     }
     else if(argc != 6 && argc != 7)
     {
@@ -159,18 +282,18 @@ int main(int argc, char *argv[])
     }
     else
     {
+        int realWidth,realHeight;
+        QString modeOfRes,filename;
         cmd = QString(argv[1]);
-        int realWidth = atoi(argv[2]);
-        int realHeight = atoi(argv[3]);
-        QString modeOfRes = QString(argv[4]);
-        QString filename = QString(argv[5]);
+        realWidth = atoi(argv[2]);
+        realHeight = atoi(argv[3]);
+        modeOfRes = QString(argv[4]);
+        filename = QString(argv[5]);
+
 
         //Prepare data from text file
-        //number of layer
-        //millimeter to next layer
-        //#layer and image
         printf("prepare dataset\n");
-        dataset raw = prepareFromTxt(filename);
+        dataset raw = prepareFromText(filename,realWidth,realHeight);
 
         //check that next layer is valid or not
         printf("\ncheck for invalid layers\n");
