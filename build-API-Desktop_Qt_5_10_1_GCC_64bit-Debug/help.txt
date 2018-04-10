@@ -1,0 +1,77 @@
+Format to run:
+./API [mode of API] [millimeter in width] [millimeter in height] [mode of resolution] [input text-file] [output O3DP-file]
+[mode of API] :
+  visualize          -- to show all image and layer from input text-file
+  exportO3DP         -- to export O3DP file from input text-file
+  visualize-single   -- to show all image and layer from neccassary input via command line (Single-image type)
+  exportO3DP-single  -- to export O3DP file from necassary input via command line (Single-image type)
+  visualize-map      -- to show all image and layer from neccassary input via command line (Map-image type)
+  exportO3DP-map     -- to export O3DP file from necassary input via command line (Map-image type)
+[millimeter in width] :
+   Integer value     -- specific the width of product's based layer (layer #0) :: millimeter
+[millimeter in height] : 
+   Integer value     -- specific the width of product's based layer (layer #0) :: millimeter
+[mode of resolution] :
+   --auto-scale      -- Resolution of pixels per millimeter is based on original image properties on layer#0
+   Integer value     -- specific resolution of pixels per millimeter 
+[input text-file] 
+   Single-Image type format
+   Map-image type format
+[output O3DP-file]
+   o3dp file         -- output O3DP file 
+***visualize should specific [millimeter in width] [millimeter in height] [mode of resolution] [input text-file]
+***exportO3DP should specific [millimeter in width] [millimeter in height] [mode of resolution] [input text-file] [output O3DP-file]
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Single-image type format
+   specific each image on each layer and difference between each layers (in millimeter) 
+   ___________________________________
+   |Single                           |
+   |#layers,dl0,dl1,dl2,...          |
+   |#l0,image0.png                   |
+   |#l1,image1.png                   |
+   |#l2,image2.png                   |
+   |.                                |
+   |.                                |
+   |.                                |
+   ___________________________________
+
+   #layers : total count of layers
+   dl(n) : the difference between #l(n) and #l(n)+1
+   #l(n) : the number of layers
+   ~~.png : image on the #l(n) layer
+   Suggestions:
+       #l(n) can be non-consecutive, but dl(n) will related to #l(n)
+       example of this file format is example.txt
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Map-image type format
+   specific image and the same color will be on the same layer with specific height
+   ___________________________________
+   |Map                              |
+   |#layers,image_map.png,...        |
+   |axis_x_length,axis_y_length      |
+   |z1,r1,g1,b1                      |
+   |z2,r2,g2,b2                      |
+   |z3,r3,g3,b3                      |
+   |.                                |
+   |.                                |
+   |.                                |
+   ___________________________________
+
+   #layers : total count of layers
+   ~~.png : map image
+   axis_x_length : length of map in x-axis (should be the same scale as y-axis and z-axis)
+   axis_y_length : length of map in y-axis
+   z(n) : the height of each color in map 
+   r(n),g(n),b(n) : the color of z(n) in map
+   Suggestions:
+       layer#0 or based layer is the origin image, so #layers includes layer#0 and 
+       don't specific color.
+       example of this file format is example_map.txt
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+      
+   
+
+    

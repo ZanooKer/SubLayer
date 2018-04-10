@@ -234,62 +234,130 @@ int main(int argc, char *argv[])
     QApplication a(argc, argv);
     MainWindow w;
 
-    //./API --help
-    //./API visualize 10 10 --auto-scale source.txt
-    //./API exportO3DP 10 10 --auto-scale source.txt out.o3dp
-
     QString cmd = " ";
-    if(QString(argv[1]) == QString("--help"))
+    if(argc == 2 && QString(argv[1]) == QString("--help"))
     {
-        printf("Format: ./API [mode of API] [millimeter in width] [millimeter in height] [mode of resolution] [text-file path]\n");
-        printf("        [mode of API] consists of \'visualize\' and \'exportO3DP\' not done yet \n");
-        printf("        [millimeter in width] is integer value\n");
-        printf("        [millimeter in height] is integer value\n");
-        printf("        [mode of resolution] is integer value equals to pixels per millimeter or \'--auto-scale\' if you want to auto scale pixels per millimeter based on picture in layer 0\n");
-        printf("        [text-file path] is the path to text file which is described below. \n\n");
-
-        printf("text file describes number of layers, millimeter between each layers, layer number and image paths related to layer number\n");
-        printf("Example of txt files is \n");
-        printf("----------------------------------------------------\n");
-        printf("|Single\t\t\t|\n"
-               "|#layers,d0,d1,d2,...\t| \n"
-               "|l0,image0.png\t\t|\n"
-               "|l1,image1.png\t\t|\n"
-               "|.\t\t\t|\n"
-               "|.\t\t\t|\n"
-               "|.\t\t\t|\n");
-        printf("----------------------------------------------------\n");
-        printf("Suggestions:\n1. d0 is the number of millimeter between l0 and l0 plus one. NOT! l0 and l1\n");
-        printf("2. l0,l1 and so on are not necessary to be consecutive.But dn are related to ln. \n");
-        printf("----------------------------------------------------\n");
-        printf("|Map\t\t\t\t|\n"
-               "|#layers,image_map.png...\t| \n"
-               "|realX,realY\t\t\t|\n"
-               "|realZ1,red1,green1,blue1\t|\n"
-               "|realZ2,red2,green2,blue2\t|\n"
-               "|realZ3,red3,green3,blue3\t|\n"
-               "|.\t\t\t\t|\n"
-               "|.\t\t\t\t|\n"
-               "|.\t\t\t\t|\n");
-        printf("----------------------------------------------------\n");
-        printf("Suggestions:\n1. realX,realY,realZ(n) is the distance of the real world in map.\n"
-               "2. red(n),green(n),blue(n) related to realZ(n)\n");
+        std::ifstream inFile;
+        inFile.open("help.txt");
+        if( inFile.is_open() )
+        {
+          std::string s;
+          while( std::getline( inFile, s ) )
+          {
+            std::cout << s << std::endl;
+          }
+          inFile.close();
+        }
+        else
+          std::cout << "Error opening file " << errno << std::endl;
     }
-    else if(argc != 6 && argc != 7)
-    {
-        printf("%d",argc);
-        printf("You don't write in format as description. Please --help to see all configs.\n");
-    }
-    else
+    else if(
+            (argc == 2 && (QString(argv[1])==QString("visualize-single") || QString(argv[1]) == QString("exportO3DP-single")))
+             || (argc == 2 && (QString(argv[1])==QString("visualize-map") || QString(argv[1]) == QString("exportO3DP-map")))
+             || (argc == 6 && (QString(argv[1])==QString("visualize")))
+             || (argc == 7 && (QString(argv[1])==QString("exportO3DP")))
+           )
     {
         int realWidth,realHeight;
         QString modeOfRes,filename;
-        cmd = QString(argv[1]);
-        realWidth = atoi(argv[2]);
-        realHeight = atoi(argv[3]);
-        modeOfRes = QString(argv[4]);
-        filename = QString(argv[5]);
+        if(argc == 2 && (QString(argv[1])==QString("visualize-single") || QString(argv[1]) == QString("exportO3DP-single")))
+        {
+            modeOfRes = QString("--auto-scale");
+            printf("Your width of product(millimeter) :");
+            scanf("%d",&realWidth);
+            printf("Your height of product(millimeter) :");
+            scanf("%d",&realHeight);
 
+            int numL;
+            std::map<int,QString> path;
+            std::vector<int> nextf;
+            char fil[80];
+            printf("Number of layer of your file :");
+            scanf("%d",&numL);
+            for(int i=0;i<numL;i++){
+                printf("Layer %d -- ",i);
+                printf("set image path :");
+                scanf("%79s",fil);
+                path[i] = QString(fil);
+                printf("height from previous layer(mm) : ");
+                if(i==0){
+                    printf("0\n");
+                }else{
+                    int temp;
+                    scanf("%d",&temp);
+                    nextf.push_back(temp);
+                }
+            }
+            cmd = (QString(argv[1])==QString("visualize-single"))?"visualize":"exportO3DP";
+
+            //write text file config
+            std::ofstream infile;
+            std::string p = "temp_config.txt";
+            filename = QString(p.c_str());
+            infile.open(p);
+            //Header
+            infile << "Single\n";
+            infile << numL;
+            for(int i=0;i<nextf.size();i++){
+                infile << "," << nextf[i];
+            }
+            infile << "\n";
+            //each layer
+            for(int i=0;i<numL;i++){
+                infile << i << "," << path[i].toStdString() << "\n";
+            }
+            infile.close();
+        }
+        else if(argc == 2 && (QString(argv[1])==QString("visualize-map") || QString(argv[1]) == QString("exportO3DP-map")))
+        {
+            modeOfRes = QString("--auto-scale");
+            cmd = (QString(argv[1])==QString("visualize-map"))?"visualize":"exportO3DP";
+            printf("Your width of product(millimeter) :");
+            scanf("%d",&realWidth);
+            printf("Your height of product(millimeter) :");
+            scanf("%d",&realHeight);
+
+            int numL;
+            char fil[80];
+            std::ofstream infile;
+            std::string p = "temp_config.txt";
+            filename = QString(p.c_str());
+            infile.open(p);
+            infile << "Map\n";
+            printf("Number of layer of your file :");
+            scanf("%d",&numL);
+            infile << numL << ",";
+            printf("Set Image path of map : ");
+            scanf("%79s",fil);
+            infile << std::string(fil) << "\n";
+            printf("set real scale of image axisX (should be same scale as height and deep): ");
+            int temp;
+            scanf("%d",&temp);
+            infile << temp << ",";
+            printf("set real scale of image axisY: ");
+            scanf("%d",&temp);
+            infile << temp << "\n";
+            for(int i=1;i<numL;i++){
+                printf("Layer %d -- ",i);
+                printf("set real scale of this layer's height : ");
+                scanf("%d",&temp);
+                infile << temp << ",";
+                printf("set RGB color : ");
+                for(int j=0;j<3;j++){
+                    scanf("%d",&temp);
+                    infile << "," << temp;
+                }
+                infile << "\n";
+            }
+            infile.close();
+        }
+        else{
+            cmd = QString(argv[1]);
+            realWidth = atoi(argv[2]);
+            realHeight = atoi(argv[3]);
+            modeOfRes = QString(argv[4]);
+            filename = QString(argv[5]);
+        }
 
         //Prepare data from text file
         printf("prepare dataset\n");
@@ -365,5 +433,8 @@ int main(int argc, char *argv[])
             QString out = QString(argv[6]);
             pb.writeO3DP(out,outGridW,outGridL,outGridH);
         }
+    }
+    else{
+        printf("You don't write in format as description. Please --help to see all configs.\n");
     }
 }
