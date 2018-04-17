@@ -56,20 +56,17 @@ void PixelPlane::checkImage()
     }
 }
 
-void PixelPlane::writeFile(std::ostream& os,int outw,int outh)
+void PixelPlane::writeFile(std::ostream& os,int maxX,int maxY)
 {
-    float ratioW = outw / (float)maxWidthGrid;
-    float ratioH = outh / (float)maxHeightGrid;
-    for(int j=0;j<outh;j++)
-    {
-        for(int i=0;i<outw;i++)
-        {
-            int wInImg = (int)(i/ratioW);
-            int hInImg = (int)(j/ratioH);
-            if(image.pixelColor(QPoint(wInImg,hInImg)).alpha() == 0)
+    float ratY = (maxHeightGrid-1)*1.00f/(maxY-1);
+    float ratX = (maxWidthGrid-1)*1.00f/(maxX-1);
+    for(int i = 0;i<maxY;++i){
+        for(int j=0;j<maxX;++j){
+            if(image.pixelColor(QPoint((int)(j*ratX),(int)(i*ratY))).alpha() == 0){
                 _WriteElement(os,(char)0);
-            else
+            }else{
                 _WriteElement(os,(char)2);
+            }
         }
     }
 }

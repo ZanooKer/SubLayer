@@ -14,7 +14,7 @@ PixelBox::PixelBox()
 
 void PixelBox::allocatePlane(int width,int length,int top)
 {
-    for(int i=planes.size();i<=top;i++)
+    for(int i=planes.size();i<top;i++)
     {
         PixelPlane pp(0,0,width,length);
         planes.push_back(pp);
@@ -29,20 +29,25 @@ void PixelBox::addImageToPlane(QImage img, int realH)
     planes[realH].addImage(img);
 }
 
-void PixelBox::writeO3DP(QString outfile,int w,int l,int h)
+void PixelBox::writeO3DP(QString outfile ,int maxGridX,int maxGridY,int maxGridZ)
 {
     printf("Write O3DP file: ...\n");
     std::ofstream os(outfile.toStdString().c_str(), std::ios::binary);
     const static std::string cookie("#OpenFab3DP V1.0 Binary");
     os.write(cookie.c_str(), cookie.size());
 
-    printf("- Write header\n");
+    printf("Grid X : %d -> %d\n",width,maxGridX);
+    printf("Grid Y : %d -> %d\n",length,maxGridY);
+    printf("Grid Z : %d -> %d\n",height,maxGridZ);
+    printf("- Write header -\n");
     //write size of outGrid
-    _WriteElement(os, w);
-    _WriteElement(os, l);
-    _WriteElement(os, h);
+    printf("Write output grid : %d %d %d \n",maxGridX,maxGridY,maxGridZ);
+    _WriteElement(os, maxGridX);
+    _WriteElement(os, maxGridY);
+    _WriteElement(os, maxGridZ);
 
     //write size of box
+    printf("Write box (deprecated)\n");
     _WriteElement(os, (double)0);
     _WriteElement(os, (double)0);
     _WriteElement(os, (double)0);
@@ -51,26 +56,29 @@ void PixelBox::writeO3DP(QString outfile,int w,int l,int h)
     _WriteElement(os, (double)0);
 
     //write number of material
-    _WriteElement(os,(int)1);
+    printf("Write number of material: 1\n");
+    _WriteElement(os,(uint32_t)1);
 
-    for(int i = 0;i<h+1;i++){
-        printf("Write output-grid Z: %d ",i);
-        int ratioH = h/height;
-        int idx = i/ratioH;
-        if(i % ratioH == 0)
-        {
-            printf("-> correspond to input-grid Z : %d\n",idx);
-            planes[idx].writeFile(os,w,l);
-        }
-        else
-        {
-            printf("-> tranparent \n");
-            for(int j=0;j<l;j++)
-            {
-                for(int k=0;k<w;k++){
-                    _WriteElement(os,(char)0);
+    printf("- Write material in each grid -\n");
+    if(maxGridZ == 1){
+        planes[0].writeFile(os,maxGridX,maxGridY);
+    }
+    else{
+        for(int i = 0;i<maxGridZ;++i){
+            int temp = i*(height-1);
+            if(temp % (maxGridZ-1) == 0){
+                printf("input grid Z %d --- output grid Z %d\n",(temp / (maxGridZ-1)),i);
+                planes[temp / (maxGridZ-1)].writeFile(os,maxGridX,maxGridY);
+
+            }else{
+                printf("transparent layer --- output grid Z %d\n",i);
+                for(int j = 0;j<maxGridY;++j){
+                    for(int k = 0;k<maxGridX;++k){
+                        _WriteElement(os,(char)0);
+                    }
                 }
             }
         }
+
     }
 }

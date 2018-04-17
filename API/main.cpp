@@ -4,6 +4,10 @@
 #include <cstdlib>
 #include <fstream>
 #include "pixelbox.h"
+#include <vector>
+
+#define gridXY_mm 0.035
+#define gridZ_mm 0.0125
 
 struct dataset{
     int numLayer;
@@ -31,13 +35,11 @@ dataset prepareIndiv(QString textfile)
     int lines = 0;
     while(!in.atEnd()) {
         QString line = in.readLine();
-        printf("%s\n",line.toStdString().c_str());
         QStringList fields = line.split(",");
         QString l = fields.at(0);
         if(lines == 1)
         {
             d.numLayer = l.toInt();
-            printf("%d\n",d.numLayer);
             for(int i=1;i<d.numLayer;i++)
             {
                 QString s = fields.at(i);
@@ -48,8 +50,8 @@ dataset prepareIndiv(QString textfile)
         {
             QString nL = fields.at(0);
             QString path = fields.at(1);
-            if(lines-1 < (int) next.size())
-                d.nextReal[nL.toInt()] = next[lines-1];
+            if(lines-1 <= (int) next.size())
+                d.nextReal[nL.toInt()] = next[lines-2];
             d.relate[nL.toInt()] = path;
         }
         lines++;
@@ -143,8 +145,6 @@ dataset prepareFromText(QString textfile,int widthProduct,int heightProduct)
     }
 
     QTextStream in(&file);
-    dataset d;
-    std::vector<int> next;
     int lines = 0;
     while(!in.atEnd()) {
         if(lines == 0)
@@ -154,7 +154,6 @@ dataset prepareFromText(QString textfile,int widthProduct,int heightProduct)
             QString l = fields.at(0);
             if(l == QString("Single"))
             {
-                printf("A");
                 return prepareIndiv(textfile);
             }
             else if(l == QString("Map"))
@@ -163,6 +162,7 @@ dataset prepareFromText(QString textfile,int widthProduct,int heightProduct)
             }
         }
     }
+    file.close();
 }
 
 int findRatio(QImage im,int rw,int rh)
@@ -211,22 +211,16 @@ void addAllImages(MainWindow &w,std::map<int,QString> pathL)
     }
 }
 
-std::vector<int> fromStartToDest(std::map<int,int> eachDiff)
+int fromStartToDest(std::map<int,int> eachDiff)
 {
-    std::vector<int> temp;
-    if(eachDiff.find(0) == eachDiff.end())
-    {
-        return temp;
+    if(eachDiff.size() == 0){
+        return 1;
     }
-    temp.push_back(0);
-    int idx = 1;
-    temp.push_back(temp.back() + eachDiff[0]);
-    while(idx < eachDiff.size())
-    {
-        temp.push_back(temp.back()+eachDiff[idx]);
-        idx++;
+    int count_layer = 1;
+    foreach(auto n,eachDiff){
+        count_layer+=n.second;
     }
-    return temp;
+    return count_layer;
 }
 
 int main(int argc, char *argv[])
@@ -237,6 +231,7 @@ int main(int argc, char *argv[])
     QString cmd = " ";
     if(argc == 2 && QString(argv[1]) == QString("--help"))
     {
+        //show help file
         std::ifstream inFile;
         inFile.open("help.txt");
         if( inFile.is_open() )
@@ -260,8 +255,10 @@ int main(int argc, char *argv[])
     {
         int realWidth,realHeight;
         QString modeOfRes,filename;
+        QString outfile;
         if(argc == 2 && (QString(argv[1])==QString("visualize-single") || QString(argv[1]) == QString("exportO3DP-single")))
         {
+            //get input from user
             modeOfRes = QString("--auto-scale");
             printf("Your width of product(millimeter) :");
             scanf("%d",&realWidth);
@@ -289,20 +286,25 @@ int main(int argc, char *argv[])
                 }
             }
             cmd = (QString(argv[1])==QString("visualize-single"))?"visualize":"exportO3DP";
+            if(cmd == "exportO3DP"){
+                printf("name of your output file : ");
+                scanf("%79s",fil);
+                outfile = QString(fil);
+            }
 
             //write text file config
             std::ofstream infile;
             std::string p = "temp_config.txt";
             filename = QString(p.c_str());
             infile.open(p);
-            //Header
+            //1.Write Header
             infile << "Single\n";
             infile << numL;
             for(int i=0;i<nextf.size();i++){
                 infile << "," << nextf[i];
             }
             infile << "\n";
-            //each layer
+            //2.Write each layer
             for(int i=0;i<numL;i++){
                 infile << i << "," << path[i].toStdString() << "\n";
             }
@@ -310,6 +312,7 @@ int main(int argc, char *argv[])
         }
         else if(argc == 2 && (QString(argv[1])==QString("visualize-map") || QString(argv[1]) == QString("exportO3DP-map")))
         {
+            //get input from user
             modeOfRes = QString("--auto-scale");
             cmd = (QString(argv[1])==QString("visualize-map"))?"visualize":"exportO3DP";
             printf("Your width of product(millimeter) :");
@@ -317,6 +320,8 @@ int main(int argc, char *argv[])
             printf("Your height of product(millimeter) :");
             scanf("%d",&realHeight);
 
+            //write text file with input from user
+            //becaused the sequence of inputs are consecutive same as text file.
             int numL;
             char fil[80];
             std::ofstream infile;
@@ -350,18 +355,27 @@ int main(int argc, char *argv[])
                 infile << "\n";
             }
             infile.close();
+            if(cmd == "exportO3DP"){
+                printf("name of your output file : ");
+                scanf("%79s",fil);
+                outfile = QString(fil);
+            }
         }
         else{
+            //all input are from command
             cmd = QString(argv[1]);
             realWidth = atoi(argv[2]);
             realHeight = atoi(argv[3]);
             modeOfRes = QString(argv[4]);
             filename = QString(argv[5]);
+            if(cmd == "exportO3DP")
+                outfile = QString(argv[6]);
         }
 
         //Prepare data from text file
-        printf("prepare dataset\n");
+        printf("\nprepare dataset from text file\n");
         dataset raw = prepareFromText(filename,realWidth,realHeight);
+        printf("load dataset successfully\n");
 
         //check that next layer is valid or not
         printf("\ncheck for invalid layers\n");
@@ -373,6 +387,7 @@ int main(int argc, char *argv[])
             printf("Cannot find based layer\n");
             return 0;
         }
+        printf("Don't have any invalid layers\n");
 
         printf("\n");
         //find pixel per millimeter
@@ -387,6 +402,7 @@ int main(int argc, char *argv[])
         }
         else
         {
+            printf("Set resulotion to be fixed\n");
             pixPerReal = modeOfRes.toInt();
             maxWidth = pixPerReal*realWidth;
             maxHeight = pixPerReal*realHeight;
@@ -398,14 +414,12 @@ int main(int argc, char *argv[])
         printf("\n");
         if(cmd == QString("visualize"))
         {
-            printf("\n");
             w.real2Scale = pixPerReal;
             w.maxWidth = maxWidth;
             w.maxHeight = maxHeight;
             w.setLayerDiff(raw.nextReal);
             addAllImages(w,raw.relate);
 
-            printf("\n");
             printf("visualize...\n");
             w.visualize();
             w.show();
@@ -414,24 +428,33 @@ int main(int argc, char *argv[])
         else if(cmd == QString("exportO3DP"))
         {
             PixelBox pb;
-            std::vector<int> allHeight = fromStartToDest(raw.nextReal);
-            printf("Input Grid : %d %d %d\n",realWidth,realHeight,allHeight.back());
-            pb.allocatePlane(realWidth,realHeight,allHeight.back());
 
-            printf("%d",allHeight.size());
-            for(int i=0;i<allHeight.size();i++){
-                QImage img(raw.relate[i]);
-                pb.addImageToPlane(img,allHeight[i]);
+            //find the maximum z input grid
+            int maxZ = fromStartToDest(raw.nextReal);
+
+            //allocate box with number of planes equal to z input grid
+            pb.allocatePlane(maxWidth,maxHeight,maxZ);
+
+            //add image to all planes
+            int basedHeight = 0;
+            pb.addImageToPlane(QImage(raw.relate[0]),basedHeight);
+            basedHeight+=1;
+            foreach(auto it,raw.nextReal){
+                int count = 1;
+                while(count != it.second){
+                    count++;
+                    basedHeight++;
+                }
+                pb.addImageToPlane(QImage(raw.relate[it.first+1]),basedHeight);
             }
 
-            int ratio = int(MM_TO_INCH * DPI); //from mm_to_inch and Default DPI (300-500)
-            int outGridW = realWidth*ratio;
-            int outGridL = realHeight*ratio;
-            int outGridH = allHeight.back()*ratio;
-            printf("Output Grid : %d %d %d \n",outGridW,outGridL,outGridH);
-
-            QString out = QString(argv[6]);
-            pb.writeO3DP(out,outGridW,outGridL,outGridH);
+            //write all planes to output grid
+            float gridSubXY = gridXY_mm;
+            int maxGridX = (int) (realWidth / gridSubXY);
+            int maxGridY = (int) (realHeight / gridSubXY);
+            float gridSubZ = gridZ_mm;
+            int maxGridZ = (int) ((maxZ-1) / gridSubZ)+1;
+            pb.writeO3DP(outfile,maxGridX,maxGridY,maxGridZ);
         }
     }
     else{
