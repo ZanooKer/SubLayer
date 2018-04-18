@@ -13,6 +13,7 @@ public:
     void addImage(QImage in);
     void writeFile(std::ostream &os, int outw, int outh);
     void checkImage();
+    QImage dithering(QImage im);
 
 private:
     QImage image;

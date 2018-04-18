@@ -5,6 +5,7 @@
 #include <fstream>
 #include "pixelbox.h"
 #include <vector>
+#include <sstream>
 
 #define gridXY_mm 0.035
 #define gridZ_mm 0.0125
@@ -22,6 +23,10 @@ _WriteElement(std::ostream &os, T element)
     os.write(reinterpret_cast<const char*>(&element), sizeof(T));
 }
 
+bool has_only_digits(const std::string s){
+  return s.find_first_not_of( "0123456789" ) == std::string::npos;
+}
+
 dataset prepareIndiv(QString textfile)
 {
     QFile file(textfile);
@@ -31,6 +36,8 @@ dataset prepareIndiv(QString textfile)
 
     QTextStream in(&file);
     dataset d;
+    dataset d_fail;
+    d_fail.numLayer = -1;
     std::vector<int> next;
     int lines = 0;
     while(!in.atEnd()) {
@@ -39,10 +46,18 @@ dataset prepareIndiv(QString textfile)
         QString l = fields.at(0);
         if(lines == 1)
         {
+            if(!has_only_digits(l.toStdString())){
+                printf("Total count of layer isn't integer\n");
+                return d_fail;
+            }
             d.numLayer = l.toInt();
             for(int i=1;i<d.numLayer;i++)
             {
                 QString s = fields.at(i);
+                if(!has_only_digits(s.toStdString())){
+                    printf("Some distance between each layers isn't integer\n");
+                    return d_fail;
+                }
                 next.push_back(s.toInt());
             }
         }
@@ -50,8 +65,13 @@ dataset prepareIndiv(QString textfile)
         {
             QString nL = fields.at(0);
             QString path = fields.at(1);
-            if(lines-1 <= (int) next.size())
+            if(!has_only_digits(nL.toStdString())){
+                printf("Some layer's number isn't integer\n");
+                return d_fail;
+            }
+            if(lines-1 <= (int) next.size()){
                 d.nextReal[nL.toInt()] = next[lines-2];
+            }
             d.relate[nL.toInt()] = path;
         }
         lines++;
@@ -73,6 +93,8 @@ dataset prepareTerrain(QString textfile,int widthProduct,int heightProduct)
     QTextStream in(&file);
     QImage imageBased;
     dataset d;
+    dataset d_fail;
+    d_fail.numLayer = -1;
     int widthPict,heightPict;
     int lines = 0;
     while(!in.atEnd()) {
@@ -80,21 +102,49 @@ dataset prepareTerrain(QString textfile,int widthProduct,int heightProduct)
         QStringList fields = line.split(",");
         if(lines==1) //read header
         {
+            if(!has_only_digits(fields.at(0).toStdString())){
+                printf("Total count of layer isn't integer\n");
+                return d_fail;
+            }
             d.numLayer = fields.at(0).toInt();
             layNumToImg[0] = QString(fields.at(1));
             imageBased = QImage(QString(fields.at(1)));
         }
         else if(lines == 2)
         {
+            if(!has_only_digits(fields.at(0).toStdString())){
+                printf("Real width of based picture isn't integer\n");
+                return d_fail;
+            }
             widthPict = fields.at(0).toInt();
+            if(!has_only_digits(fields.at(1).toStdString())){
+                printf("Real height of based picture isn't integer\n");
+                return d_fail;
+            }
             heightPict = fields.at(1).toInt();
         }
         else if(lines > 2)
         {
+            if(!has_only_digits(fields.at(0).toStdString())){
+                printf("Some layer's height isn't integer\n");
+                return d_fail;
+            }
             eachLayHeight.push_back(fields.at(0).toInt());
             int rf,gf,bf;
+            if(!has_only_digits(fields.at(1).toStdString())){
+                printf("Some red value of pixel isn't integer\n");
+                return d_fail;
+            }
             rf = fields.at(1).toInt();
+            if(!has_only_digits(fields.at(2).toStdString())){
+                printf("Some green value of pixel isn't integer\n");
+                return d_fail;
+            }
             gf = fields.at(2).toInt();
+            if(!has_only_digits(fields.at(3).toStdString())){
+                printf("Some blue value of pixel isn't integer\n");
+                return d_fail;
+            }
             bf = fields.at(3).toInt();
             QImage temp = imageBased;
             for(int i=0;i<imageBased.height();i++)
@@ -146,6 +196,8 @@ dataset prepareFromText(QString textfile,int widthProduct,int heightProduct)
 
     QTextStream in(&file);
     int lines = 0;
+    dataset d;
+    d.numLayer = -1;
     while(!in.atEnd()) {
         if(lines == 0)
         {
@@ -160,9 +212,15 @@ dataset prepareFromText(QString textfile,int widthProduct,int heightProduct)
             {
                 return prepareTerrain(textfile,widthProduct,heightProduct);
             }
+            else {
+                printf("Could not find format type in header\n.");
+                return d;
+            }
         }
     }
     file.close();
+    printf("Input file isn't found\n.");
+    return d;
 }
 
 int findRatio(QImage im,int rw,int rh)
@@ -258,38 +316,62 @@ int main(int argc, char *argv[])
         QString outfile;
         if(argc == 2 && (QString(argv[1])==QString("visualize-single") || QString(argv[1]) == QString("exportO3DP-single")))
         {
+            std::string temp_in;
             //get input from user
             modeOfRes = QString("--auto-scale");
             printf("Your width of product(millimeter) :");
-            scanf("%d",&realWidth);
+            std::getline (std::cin,temp_in);
+            if(!has_only_digits(temp_in)){
+                printf("Terminated\n");
+                return 0;
+            }
+            realWidth = atoi(temp_in.c_str());
+            temp_in.clear();
             printf("Your height of product(millimeter) :");
-            scanf("%d",&realHeight);
+            std::getline (std::cin,temp_in);
+            if(!has_only_digits(temp_in)){
+                printf("Terminated\n");
+                return 0;
+            }
+            realHeight = atoi(temp_in.c_str());
+            temp_in.clear();
 
             int numL;
             std::map<int,QString> path;
             std::vector<int> nextf;
-            char fil[80];
             printf("Number of layer of your file :");
-            scanf("%d",&numL);
+            std::getline (std::cin,temp_in);
+            if(!has_only_digits(temp_in)){
+                printf("Terminated\n");
+                return 0;
+            }
+            numL = atoi(temp_in.c_str());
+            temp_in.clear();
             for(int i=0;i<numL;i++){
                 printf("Layer %d -- ",i);
                 printf("set image path :");
-                scanf("%79s",fil);
-                path[i] = QString(fil);
+                std::getline (std::cin,temp_in);
+                path[i] = QString(temp_in.c_str());
+                temp_in.clear();
                 printf("height from previous layer(mm) : ");
                 if(i==0){
                     printf("0\n");
                 }else{
-                    int temp;
-                    scanf("%d",&temp);
-                    nextf.push_back(temp);
+                    std::getline(std::cin,temp_in);
+                    if(!has_only_digits(temp_in)){
+                        printf("Terminated\n");
+                        return 0;
+                    }
+                    nextf.push_back(atoi(temp_in.c_str()));
+                    temp_in.clear();
                 }
             }
             cmd = (QString(argv[1])==QString("visualize-single"))?"visualize":"exportO3DP";
             if(cmd == "exportO3DP"){
                 printf("name of your output file : ");
-                scanf("%79s",fil);
-                outfile = QString(fil);
+                std::getline (std::cin,temp_in);
+                outfile = QString(temp_in.c_str());
+                temp_in.clear();
             }
 
             //write text file config
@@ -313,84 +395,172 @@ int main(int argc, char *argv[])
         else if(argc == 2 && (QString(argv[1])==QString("visualize-map") || QString(argv[1]) == QString("exportO3DP-map")))
         {
             //get input from user
+            std::string temp_in;
             modeOfRes = QString("--auto-scale");
             cmd = (QString(argv[1])==QString("visualize-map"))?"visualize":"exportO3DP";
             printf("Your width of product(millimeter) :");
-            scanf("%d",&realWidth);
+            std::getline (std::cin,temp_in);
+            if(!has_only_digits(temp_in)){
+                printf("Terminated\n");
+                return 0;
+            }
+            realWidth = atoi(temp_in.c_str());
+            temp_in.clear();
             printf("Your height of product(millimeter) :");
-            scanf("%d",&realHeight);
+            std::getline (std::cin,temp_in);
+            if(!has_only_digits(temp_in)){
+                printf("Terminated\n");
+                return 0;
+            }
+            realHeight = atoi(temp_in.c_str());
+            temp_in.clear();
 
             //write text file with input from user
             //becaused the sequence of inputs are consecutive same as text file.
             int numL;
-            char fil[80];
             std::ofstream infile;
             std::string p = "temp_config.txt";
             filename = QString(p.c_str());
             infile.open(p);
             infile << "Map\n";
             printf("Number of layer of your file :");
-            scanf("%d",&numL);
+            std::getline (std::cin,temp_in);
+            if(!has_only_digits(temp_in)){
+                printf("Terminated\n");
+                return 0;
+            }
+            numL = atoi(temp_in.c_str());
+            temp_in.clear();
             infile << numL << ",";
+
             printf("Set Image path of map : ");
-            scanf("%79s",fil);
-            infile << std::string(fil) << "\n";
+            std::getline (std::cin,temp_in);
+            infile << temp_in << "\n";
+            temp_in.clear();
+
             printf("set real scale of image axisX (should be same scale as height and deep): ");
-            int temp;
-            scanf("%d",&temp);
-            infile << temp << ",";
+            std::getline (std::cin,temp_in);
+            if(!has_only_digits(temp_in)){
+                printf("Terminated\n");
+                return 0;
+            }
+            infile << temp_in << ",";
+            temp_in.clear();
+
             printf("set real scale of image axisY: ");
-            scanf("%d",&temp);
-            infile << temp << "\n";
+            std::getline (std::cin,temp_in);
+            if(!has_only_digits(temp_in)){
+                printf("Terminated\n");
+                return 0;
+            }
+            infile << temp_in << "\n";
+            temp_in.clear();
+
             for(int i=1;i<numL;i++){
                 printf("Layer %d -- ",i);
                 printf("set real scale of this layer's height : ");
-                scanf("%d",&temp);
-                infile << temp << ",";
-                printf("set RGB color : ");
-                for(int j=0;j<3;j++){
-                    scanf("%d",&temp);
-                    infile << "," << temp;
+                std::getline (std::cin,temp_in);
+                if(!has_only_digits(temp_in)){
+                    printf("Terminated\n");
+                    return 0;
                 }
+                infile << temp_in;
+                temp_in.clear();
+                printf("set RGB color : ");
+                std::getline (std::cin,temp_in);
+                std::stringstream lineStream;
+                lineStream << temp_in;
+                std::string token;
+                int count = 0;
+                while(lineStream >> token && count < 3)
+                {
+                    if(!has_only_digits(token)){
+                        printf("Terminated\n");
+                        return 0;
+
+                    }
+                    infile << "," << token;
+                    count++;
+                }
+                temp_in.clear();
+
+
+//                for(int j=0;j<3;j++){
+//                    std::getline (std::cin,temp_in);
+//                    if(!has_only_digits(temp_in)){
+//                        printf("Terminated\n");
+//                        return 0;
+//                    }
+//                    infile << temp_in << ",";
+//                    temp_in.clear();
+//                }
                 infile << "\n";
             }
             infile.close();
             if(cmd == "exportO3DP"){
                 printf("name of your output file : ");
-                scanf("%79s",fil);
-                outfile = QString(fil);
+                std::getline (std::cin,temp_in);
+                outfile = QString(temp_in.c_str());
+                temp_in.clear();
             }
         }
         else{
             //all input are from command
             cmd = QString(argv[1]);
-            realWidth = atoi(argv[2]);
-            realHeight = atoi(argv[3]);
+            std::string temp = QString(argv[2]).toStdString();
+            if(has_only_digits(temp)){
+                realWidth = atoi(argv[2]);
+            }
+            else{
+                printf("Real width isn't integer number\nTerminated\n");
+                return 0;
+            }
+            temp = QString(argv[3]).toStdString();
+            if(has_only_digits(temp)){
+                realHeight = atoi(argv[3]);
+            }
+            else{
+                printf("Real height isn't integer number\nTerminated\n");
+                return 0;
+            }
             modeOfRes = QString(argv[4]);
             filename = QString(argv[5]);
             if(cmd == "exportO3DP")
                 outfile = QString(argv[6]);
         }
 
+
+
+
         //Prepare data from text file
         printf("\nprepare dataset from text file\n");
         dataset raw = prepareFromText(filename,realWidth,realHeight);
+        if(raw.numLayer == -1){
+            printf("load dataset failed\nTerminated\n");
+            return 0;
+        }
         printf("load dataset successfully\n");
+
+
 
         //check that next layer is valid or not
         printf("\ncheck for invalid layers\n");
-        if(!checkInvalidLayer(raw.nextReal,raw.relate))
+        if(!checkInvalidLayer(raw.nextReal,raw.relate)){
+            printf("found invalid layer\nTerminated\n");
             return 0;
-
+        }
         //check that it have based layer
         if(raw.relate.find(0) == raw.relate.end()){
-            printf("Cannot find based layer\n");
+            printf("Cannot find layer #0\nTerminated\n");
             return 0;
         }
         printf("Don't have any invalid layers\n");
 
+
+
+
+        //find pixel per millimeter (resolution)
         printf("\n");
-        //find pixel per millimeter
         int pixPerReal,maxWidth,maxHeight;
         if(modeOfRes == QString("--auto-scale"))
         {
@@ -400,18 +570,29 @@ int main(int argc, char *argv[])
             maxHeight = im.height();
             pixPerReal = findRatio(im,realWidth,realHeight);
         }
-        else
+        else if(has_only_digits(modeOfRes.toStdString()))
         {
             printf("Set resulotion to be fixed\n");
             pixPerReal = modeOfRes.toInt();
             maxWidth = pixPerReal*realWidth;
             maxHeight = pixPerReal*realHeight;
+        }else{
+            printf("mode of resolution is neither integer value nor --auto-scale\nTerminated\n");
+            return 0;
         }
+
+
+        //show all properties
         printf("Set each layer have maximum width : %d \n",maxWidth);
         printf("Set each layer have maximum height : %d \n",maxHeight);
         printf("Set %d pixels per one millimeter.\n", pixPerReal);
-
         printf("\n");
+
+
+
+
+
+        //output as visualize
         if(cmd == QString("visualize"))
         {
             w.real2Scale = pixPerReal;
@@ -425,6 +606,9 @@ int main(int argc, char *argv[])
             w.show();
             return a.exec();
         }
+
+
+        //output as export O3DP
         else if(cmd == QString("exportO3DP"))
         {
             PixelBox pb;

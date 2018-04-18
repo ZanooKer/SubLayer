@@ -6,7 +6,6 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    resize = false;
 }
 
 MainWindow::~MainWindow()
@@ -17,11 +16,6 @@ MainWindow::~MainWindow()
 void MainWindow::setNumLayers(int num)
 {
     this->numberOfLayer = num;
-}
-
-void MainWindow::setStartLayers(int num)
-{
-    this->startNumLayer = num;
 }
 
 void MainWindow::rotateOneStep()
@@ -71,6 +65,9 @@ void MainWindow::visualize()
 void MainWindow::addImage(QString filename,int layer)
 {
     QImage image(filename);
+    if(image.isNull()){
+        exit(0);
+    }
     printf("Add %s as layer %d \n",filename.toStdString().c_str(),layer);
     if(image.width() > maxWidth && image.height() >  maxHeight)
     {

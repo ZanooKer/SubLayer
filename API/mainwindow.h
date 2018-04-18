@@ -37,8 +37,6 @@ private slots:
 private:
     Ui::MainWindow *ui;
     int numberOfLayer;
-    int startNumLayer;
-    bool resize;
     std::map<int,float> layerDiff;
     std::vector<PicturePiece> pps;
     GLWidget *glWidgets;
