@@ -7,7 +7,8 @@ _WriteElement(std::ostream &os, T element)
 {
     os.write(reinterpret_cast<const char*>(&element), sizeof(T));
 }
-int toRange(int value,int min,int max){
+
+float toRange(float value,float min,float max){
     if(value < min)return min;
     else if(value > max)return max;
     else return value;
@@ -73,21 +74,34 @@ void PixelPlane::writeFile(std::ostream& os,int maxX,int maxY)
     iw.setProgressiveScanWrite( true );
     iw.write(image);
 
-    float ratY = (maxHeightGrid-1)*1.00f/(maxY-1);
-    float ratX = (maxWidthGrid-1)*1.00f/(maxX-1);
+    float ratY = (maxHeightGrid)*1.0f/(maxY);
+    float ratX = (maxWidthGrid)*1.0f/(maxX);
+//    QColor ct(255,0,0,255);
+//    int mf = 2;
+//    ct = ct.toCmyk();
+//    if(ct.cyanF() > 0.5)mf+=1;
+//    //check green -> m
+//    if(ct.magentaF() > 0.5)mf+=4;
+//    //check blue -> y
+//    if(ct.yellowF() > 0.5)mf+=2;
+//    printf("%f %f %f %d AA",ct.cyanF(),ct.magentaF(),ct.yellowF(),mf);
+
     for(int i = 0;i<maxY;++i){
         for(int j=0;j<maxX;++j){
-            if(image.pixelColor(QPoint((int)(j*ratX),(int)(i*ratY))).alpha() == 0){
+           if(image.pixelColor((int)(j*ratX),(int)(i*ratY)).alpha() == 0){
                 _WriteElement(os,(char)0);
             }else{
                 int mate = 2;
-                QColor c = image.pixelColor(QPoint((int)(j*ratX),(int)(i*ratY)));
+                QColor c= image.pixelColor(QPoint((int)(j*ratX),(int)(i*ratY))).toCmyk();
                 //check red -> C
-                if(c.red() == 0)mate+=1;
+                if(c.cyanF() > 0.5)
+                    mate+=1;
                 //check green -> m
-                if(c.green() == 0)mate+=4;
+                if(c.magentaF() > 0.5)
+                    mate+=4;
                 //check blue -> y
-                if(c.blue() == 0)mate+=2;
+                if(c.yellowF() > 0.5)
+                    mate+=2;
                 _WriteElement(os,(char)mate);
             }
         }
@@ -97,116 +111,69 @@ void PixelPlane::writeFile(std::ostream& os,int maxX,int maxY)
 QImage PixelPlane::dithering(QImage img){
     //dithering
     //increase scale
-    QImage img_dit(img.width()*8,img.height()*8,QImage::Format_RGBA8888);
+    QImage img_dit(img.width()*10,img.height()*10,QImage::Format_RGBA8888);
     for(int i = 0;i<img_dit.height();++i){
         for(int j=0;j<img_dit.width();++j){
-            img_dit.setPixelColor(j,i,image.pixelColor(j/8,i/8));
+            img_dit.setPixelColor(j,i,image.pixelColor(j/10,i/10));
         }
     }
-    //use Floyd–Steinberg_dithering on each channel
-    for(int ch=0;ch<3;ch++){
-        for(int i = 0;i<img_dit.height();++i){
-            for(int j=0;j<img_dit.width();++j){
-                if(!img_dit.pixelColor(j,i).alpha() == 0){
-                    if(ch == 0){
-                        QColor temp = img_dit.pixelColor(j,i);
-                        int oldRed = temp.red();
-                        temp.setRed((temp.red() > 125)?255:0);
-                        img_dit.setPixelColor(j,i,temp);
+    //use Floyd–Steinberg_dithering
+    for(int i = 0;i<img_dit.height();++i){
+        for(int j=0;j<img_dit.width();++j){
+            if(img_dit.pixelColor(j,i).alpha() != 0){
+                //get new color from threshold
+                QColor cymk = img_dit.pixelColor(j,i).toCmyk();
+                float oldCyan = cymk.cyanF();
+                float oldMa = cymk.magentaF();
+                float oldYell = cymk.yellowF();
+                float oldBl = cymk.blackF();
+                float newC = (oldCyan > 0.5f)?1.0f:0.0f;
+                float newM = (oldMa > 0.5f)?1.0f:0.0f;
+                float newY = (oldYell > 0.5f)?1.0f:0.0f;
+                float newK = (oldBl > 0.5f)?1.0f:0.0f;
+                img_dit.pixelColor(j,i).setCmykF(newC,newM,newY,newK);
 
-                        int quant_error = oldRed - temp.red();
-                        QColor tempOld;
-                        if(j+1 < img_dit.width()){
-                            tempOld = img_dit.pixelColor(j+1,i);
-                            tempOld.setRed(toRange(tempOld.red() + quant_error * 7 / 16,0,255));
-                            if(tempOld.alpha() != 0)
-                                img_dit.setPixelColor(j+1,i,tempOld);
-                            if(i+1 < img_dit.height()){
-                                tempOld = img_dit.pixelColor(j+1,i+1);
-                                tempOld.setRed(toRange(tempOld.red() + quant_error * 1 / 16,0,255));
-                                if(tempOld.alpha() != 0)
-                                    img_dit.setPixelColor(j+1,i+1,tempOld);
-                            }
-                        }
-                        if(i+1 < img_dit.height()){
-                            tempOld = img_dit.pixelColor(j,i+1);
-                            tempOld.setRed(toRange(tempOld.red() + quant_error * 5 / 16,0,255));
-                            if(tempOld.alpha() != 0)
-                                img_dit.setPixelColor(j,i+1,tempOld);
-                            if(j-1 >= 0){
-                                tempOld = img_dit.pixelColor(j-1,i+1);
-                                tempOld.setRed(toRange(tempOld.red() + quant_error * 3 / 16,0,255));
-                                if(tempOld.alpha() != 0)
-                                    img_dit.setPixelColor(j-1,i+1,tempOld);
-                            }
-                        }
-                    }
-                    else if(ch == 1){
-                        QColor temp = img_dit.pixelColor(j,i);
-                        int oldRed = temp.green();
-                        temp.setGreen((temp.green() > 125)?255:0);
-                        img_dit.setPixelColor(j,i,temp);
+                //get diff
+                float diffC = newC - oldCyan;
+                float diffM = newM - oldMa;
+                float diffY = newY - oldYell;
+                float diffK = newK - oldBl;
 
-                        int quant_error = oldRed - temp.green();
-                        QColor tempOld;
-                        if(j+1 < img_dit.width()){
-                            tempOld = img_dit.pixelColor(j+1,i);
-                            tempOld.setGreen(toRange(tempOld.green() + quant_error * 7 / 16,0,255));
-                            if(tempOld.alpha() != 0)
-                                img_dit.setPixelColor(j+1,i,tempOld);
-                            if(i+1 < img_dit.height()){
-                                tempOld = img_dit.pixelColor(j+1,i+1);
-                                tempOld.setGreen(toRange(tempOld.green() + quant_error * 1 / 16,0,255));
-                                if(tempOld.alpha() != 0)
-                                    img_dit.setPixelColor(j+1,i+1,tempOld);
-                            }
-                        }
-                        if(i+1 < img_dit.height()){
-                            tempOld = img_dit.pixelColor(j,i+1);
-                            tempOld.setGreen(toRange(tempOld.green() + quant_error * 5 / 16,0,255));
-                            if(tempOld.alpha() != 0)
-                                img_dit.setPixelColor(j,i+1,tempOld);
-                            if(j-1 >= 0){
-                                tempOld = img_dit.pixelColor(j-1,i+1);
-                                tempOld.setGreen(toRange(tempOld.green() + quant_error * 3 / 16,0,255));
-                                if(tempOld.alpha() != 0)
-                                    img_dit.setPixelColor(j-1,i+1,tempOld);
-                            }
-                        }
-                    }else{
-                        QColor temp = img_dit.pixelColor(j,i);
-                        int oldRed = temp.blue();
-                        temp.setBlue((temp.blue() > 125)?255:0);
-                        img_dit.setPixelColor(j,i,temp);
-
-                        int quant_error = oldRed - temp.blue();
-                        QColor tempOld;
-                        if(j+1 < img_dit.width()){
-                            tempOld = img_dit.pixelColor(j+1,i);
-                            tempOld.setBlue(toRange(tempOld.blue() + quant_error * 7 / 16,0,255));
-                            if(tempOld.alpha() != 0)
-                                img_dit.setPixelColor(j+1,i,tempOld);
-                            if(i+1 < img_dit.height()){
-                                tempOld = img_dit.pixelColor(j+1,i+1);
-                                tempOld.setBlue(toRange(tempOld.blue() + quant_error * 1 / 16,0,255));
-                                if(tempOld.alpha() != 0)
-                                    img_dit.setPixelColor(j+1,i+1,tempOld);
-                            }
-                        }
-                        if(i+1 < img_dit.height()){
-                            tempOld = img_dit.pixelColor(j,i+1);
-                            tempOld.setBlue(toRange(tempOld.blue() + quant_error * 5 / 16,0,255));
-                            if(tempOld.alpha() != 0)
-                                img_dit.setPixelColor(j,i+1,tempOld);
-                            if(j-1 >= 0){
-                                tempOld = img_dit.pixelColor(j-1,i+1);
-                                tempOld.setBlue(toRange(tempOld.blue() + quant_error * 3 / 16,0,255));
-                                if(tempOld.alpha() != 0)
-                                    img_dit.setPixelColor(j-1,i+1,tempOld);
-                            }
-                        }
+                //span the diff to all pixels around this pixel with the weight according to Floyd–Steinberg_dithering
+                QColor tempOld;
+                if(j+1 < img_dit.width()){
+                    tempOld = img_dit.pixelColor(j+1,i).toCmyk();
+                    if(img_dit.pixelColor(j+1,i).alpha() == 0)
+                        img_dit.pixelColor(j+1,i).setCmykF(toRange(tempOld.cyanF() + diffC * 7 /16,0,1),
+                                        toRange(tempOld.magentaF() + diffM * 7 /16,0,1),
+                                        toRange(tempOld.yellowF() + diffY * 7 /16,0,1),
+                                        toRange(tempOld.blackF() + diffK * 7 /16,0,1));
+                    if(i+1 < img_dit.height()){
+                        tempOld = img_dit.pixelColor(j+1,i+1).toCmyk();
+                        if(img_dit.pixelColor(j+1,i+1).alpha() == 0)
+                        img_dit.pixelColor(j+1,i+1).setCmykF(toRange(tempOld.cyanF() + diffC * 1 /16,0,1),
+                                        toRange(tempOld.magentaF() + diffM * 1 /16,0,1),
+                                        toRange(tempOld.yellowF() + diffY * 1 /16,0,1),
+                                        toRange(tempOld.blackF() + diffK * 1 /16,0,1));
                     }
                 }
+                if(i+1 < img_dit.height()){
+                    tempOld = img_dit.pixelColor(j,i+1).toCmyk();
+                    if(img_dit.pixelColor(j,i+1).alpha() == 0)
+                    img_dit.pixelColor(j,i+1).setCmykF(toRange(tempOld.cyanF() + diffC * 5 /16,0,1),
+                                    toRange(tempOld.magentaF() + diffM * 5 /16,0,1),
+                                    toRange(tempOld.yellowF() + diffY* 5 /16,0,1),
+                                    toRange(tempOld.blackF() + diffK * 5 /16,0,1));
+                    if(j-1 >= 0){
+                        tempOld = img_dit.pixelColor(j-1,i+1).toCmyk();
+                        if(img_dit.pixelColor(j-1,i+1).alpha() == 0)
+                        img_dit.pixelColor(j-1,i+1).setCmykF(toRange(tempOld.cyanF() + diffC * 3 /16,0,1),
+                                        toRange(tempOld.magentaF() + diffM * 3 /16,0,1),
+                                        toRange(tempOld.yellowF() + diffY * 3 /16,0,1),
+                                        toRange(tempOld.blackF() + diffK * 3 /16,0,1));
+                    }
+                }
+
             }
         }
     }

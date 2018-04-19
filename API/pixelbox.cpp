@@ -56,7 +56,7 @@ void PixelBox::writeO3DP(QString outfile ,int maxGridX,int maxGridY,int maxGridZ
     _WriteElement(os, (double)0);
 
     //write number of material
-    printf("Write number of material: 1\n");
+    printf("Write number of material: \n");
     _WriteElement(os,(uint32_t)7);
 
     printf("- Write material in each grid -\n");
